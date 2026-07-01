@@ -24,6 +24,7 @@
 
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-handwriting: 'Satisfy', cursive;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* Grid Layouts */
   --safe-area-inset-bottom: 0px;

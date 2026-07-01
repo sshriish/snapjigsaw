@@ -94,7 +94,10 @@ export async function createPuzzlePieces(
  * Ensures that the scrambled state is NOT already solved.
  */
 export function scramblePieces(pieces: PuzzlePiece[], rotationMode: boolean): PuzzlePiece[] {
-  const scrambled = [...pieces];
+  // Clone each piece object too, not just the array — a shallow `[...pieces]`
+  // copy still shares the underlying piece references, so mutating
+  // `currentIndex`/`rotation` below would silently corrupt the caller's data.
+  const scrambled = pieces.map((piece) => ({ ...piece }));
   let isSolved = true;
 
   while (isSolved) {
