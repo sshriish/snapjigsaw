@@ -194,8 +194,11 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
             text: 'Look at the digital polaroid memory I just unlocked!'
           });
         } else {
-          // Native share unsupported fallback
-          alert('Web Share is not fully supported on this device. You can download the image to share it!');
+          // Laptop / unsupported fallback — just download it instead
+          const link = document.createElement('a');
+          link.download = `polaroid-${Date.now()}.jpg`;
+          link.href = canvas.toDataURL('image/jpeg', 0.95);
+          link.click();
         }
       }, 'image/jpeg', 0.95);
     } catch (err) {
