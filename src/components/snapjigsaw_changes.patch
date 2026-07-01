@@ -1,0 +1,2096 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..259aa9c
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,8 @@
++# Copy this file to .env.local and fill in your Supabase project's values
++# (Dashboard > Project Settings > API).
++#
++# These are optional: if left unset, SnapJigsaw runs fully offline with
++# localStorage-only storage, and sync/sharing UI is hidden.
++
++VITE_SUPABASE_URL=https://your-project-ref.supabase.co
++VITE_SUPABASE_ANON_KEY=your-anon-public-key
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..396ec81
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,34 @@
++name: CI
++
++on:
++  push:
++    branches: [main]
++  pull_request:
++    branches: [main]
++
++jobs:
++  build-and-test:
++    name: Lint, test, and build
++    runs-on: ubuntu-latest
++
++    steps:
++      - name: Checkout repository
++        uses: actions/checkout@v4
++
++      - name: Set up Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++          cache: 'npm'
++
++      - name: Install dependencies
++        run: npm ci
++
++      - name: Lint
++        run: npm run lint
++
++      - name: Run unit tests
++        run: npm run test
++
++      - name: Type-check and build
++        run: npm run build
+diff --git a/.gitignore b/.gitignore
+index a547bf3..4bae74c 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -12,6 +12,11 @@ dist
+ dist-ssr
+ *.local
+ 
++# Environment variables (Supabase keys, etc.)
++.env
++.env.local
++.env.*.local
++
+ # Editor directories and files
+ .vscode/*
+ !.vscode/extensions.json
+diff --git a/.oxlintrc.json b/.oxlintrc.json
+index 6fa991d..1764e4f 100644
+--- a/.oxlintrc.json
++++ b/.oxlintrc.json
+@@ -1,8 +1,15 @@
+ {
+   "$schema": "./node_modules/oxlint/configuration_schema.json",
+   "plugins": ["react", "typescript", "oxc"],
++  "options": {
++    "typeAware": true
++  },
+   "rules": {
+     "react/rules-of-hooks": "error",
+-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
++    "react/exhaustive-deps": "error",
++    "react/only-export-components": ["warn", { "allowConstantExport": true }],
++    "typescript/no-unused-vars": "warn",
++    "typescript/no-explicit-any": "warn",
++    "no-console": ["warn", { "allow": ["warn", "error"] }]
+   }
+ }
+diff --git a/README.md b/README.md
+index d6af7e3..5bbbd32 100644
+--- a/README.md
++++ b/README.md
+@@ -1,32 +1,176 @@
+-# React + TypeScript + Vite
++# 📸 SnapJigsaw
+ 
+-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
++**Snap a selfie. Apply a retro filter. Solve the jigsaw. Collect the polaroid.**
+ 
+-Currently, two official plugins are available:
++SnapJigsaw is a 100% client-side Progressive Web App that turns your webcam into
++a puzzle generator: capture a photo, bake in a vintage filter, then reassemble it
++as a scrambled jigsaw puzzle. Solve three puzzles in a row without discarding to
++unlock a collectible digital polaroid for your gallery wall.
+ 
+-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
++No account, no backend, no photo ever leaves your device — everything is
++processed and stored locally in the browser.
+ 
+-## React Compiler
++## ✨ Features
+ 
+-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
++- **Live camera capture** with a countdown timer, front/back camera switching,
++  and shutter sound/flash feedback
++- **Retro filter pipeline** (vintage, noir, and more) rendered entirely on
++  `<canvas>`
++- **Procedural jigsaw puzzles** sliced from your photo at 3 difficulty tiers
++  (3×3 / 4×4 / 5×5), with an optional **rotation mode** that also scrambles
++  piece orientation
++- **Streak-based progression** — solve 3 puzzles in a row to reveal a
++  polaroid; discarding a puzzle keeps your streak alive without penalty
++- **Digital polaroid gallery wall**, persisted locally via `localStorage`,
++  with unlockable frame styles as your collection grows
++- **Installable PWA** with offline support via a service worker
+ 
+-## Expanding the Oxlint configuration
++## 🧱 Tech Stack
+ 
+-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
++- [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
++- [Vite](https://vite.dev/) for dev server & bundling
++- [Supabase](https://supabase.com/) (optional) for cross-device sync, auth, and share links
++- [React Router](https://reactrouter.com/) for the public `/share/:slug` route
++- [oxlint](https://oxc.rs/) for linting (with type-aware rules enabled)
++- [Vitest](https://vitest.dev/) for unit tests
++- [canvas-confetti](https://github.com/catdad/canvas-confetti) for win celebrations
++- [lucide-react](https://lucide.dev/) for icons
+ 
+-```json
+-{
+-  "$schema": "./node_modules/oxlint/configuration_schema.json",
+-  "plugins": ["react", "typescript", "oxc"],
+-  "options": {
+-    "typeAware": true
+-  },
+-  "rules": {
+-    "react/rules-of-hooks": "error",
+-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+-  }
+-}
++## 🚀 Getting Started
++
++```bash
++# Install dependencies
++npm install
++
++# Start the dev server
++npm run dev
+ ```
+ 
+-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
++Then open the printed local URL in a browser that supports `getUserMedia`
++(camera access requires HTTPS or localhost).
++
++### Other scripts
++
++| Command             | Description                                  |
++| -------------------- | --------------------------------------------- |
++| `npm run dev`         | Start the Vite dev server with HMR            |
++| `npm run build`       | Type-check and build a production bundle      |
++| `npm run preview`     | Preview the production build locally          |
++| `npm run lint`        | Run oxlint (type-aware rules included)        |
++| `npm run test`        | Run the unit test suite once                  |
++| `npm run test:watch`  | Run tests in watch mode                       |
++
++## ☁️ Optional: Cloud Sync & Sharing (Supabase)
++
++By default SnapJigsaw is 100% local — no signup, nothing leaves the device.
++Optionally, you can wire it up to [Supabase](https://supabase.com) to unlock:
++
++- **Cross-device sync** of your polaroid wall (magic-link email sign-in, no password)
++- **Public share links** (`/share/:slug`) for any individual polaroid
++
++### Setup
++
++1. Create a free project at [supabase.com](https://supabase.com).
++2. In the Supabase dashboard, open **SQL Editor** and run the contents of
++   [`supabase/schema.sql`](./supabase/schema.sql) — this creates the
++   `polaroids` table, its Row Level Security policies, and the `polaroids`
++   storage bucket.
++3. Copy `.env.example` to `.env.local` and fill in your project's URL and
++   anon key (found in **Project Settings > API**):
++
++   ```bash
++   cp .env.example .env.local
++   ```
++
++4. Restart the dev server. A "Sync Wall" button will appear in the header.
++
++If you skip this setup, the app works exactly as before (localStorage-only)
++— the sync/sharing UI simply won't appear.
++
++### How it works
++
++- Sign-in is via magic link (Supabase Auth `signInWithOtp`) — no passwords.
++- On first sign-in, any polaroids already saved locally are pushed up to
++  your account automatically (one-time migration).
++- Row Level Security ensures each account can only read/write its own
++  polaroids — except for rows with a `share_slug` set, which become
++  publicly readable (and only that one row) to power share links.
++- Share links point to `/share/:slug`, a route that works for anyone,
++  signed in or not.
++
++## 🚀 Deploying to Vercel
++
++Vercel auto-detects this as a Vite project — no extra config needed for a
++local-only deployment. If you've set up Supabase sync (above), also add
++`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as Environment Variables
++in your Vercel project settings (Project > Settings > Environment
++Variables) before deploying, since `.env.local` is never committed.
++
++`vercel.json` in this repo adds an SPA rewrite so the `/share/:slug` route
++doesn't 404 on a direct load or refresh.
++
++## 🕹️ How to Play
++
++1. **Choose a difficulty** (Easy 3×3, Normal 4×4, or Hard 5×5 — unlocked after
++   your first 3 polaroids) and optionally enable **Rotation Mode**.
++2. **Open the camera** and let the 4-second countdown snap your photo.
++3. **Pick a filter** to bake into the puzzle and final polaroid.
++4. **Solve the puzzle** — tap two pieces to swap them (or drag on desktop);
++   in Rotation Mode, tap a selected piece again to rotate it 90°.
++5. **Repeat 3 times in a row** without discarding to unlock the polaroid
++   reveal, then save it to your gallery wall.
++
++## 🗂️ Project Structure
++
++```
++src/
++├── App.tsx                  # Top-level screen router & app state
++├── components/
++│   ├── CameraCapture.tsx    # getUserMedia camera + countdown + shutter
++│   ├── FilterSelector.tsx   # Filter preview thumbnails & selection
++│   ├── JigsawPuzzle.tsx     # Puzzle board, swap/rotate interactions, win detection
++│   ├── PolaroidReveal.tsx   # Post-streak reveal animation & save flow
++│   ├── PolaroidWall.tsx     # Persisted gallery of saved polaroids
++│   ├── LoginScreen.tsx      # Magic-link sign-in UI (optional Supabase sync)
++│   └── SharedPolaroidView.tsx  # Public /share/:slug view, no auth required
++├── hooks/
++│   ├── AuthContext.ts       # Auth context/type definitions
++│   ├── AuthProvider.tsx     # Auth state provider (session, sign-in/out)
++│   └── useAuth.ts           # useAuth() hook
++├── lib/
++│   ├── supabaseClient.ts    # Supabase client singleton
++│   └── polaroidSync.ts      # Upload/fetch/delete/share-link data layer
++└── utils/
++    ├── puzzleHelper.ts      # Pure slicing / scrambling / solved-state logic
++    ├── imageFilters.ts      # Canvas-based filter implementations
++    ├── imageEnhance.ts      # Polaroid enhancement pass
++    └── soundHelper.ts       # Web Audio synthesized sound effects
++
++supabase/
++└── schema.sql               # Run once in the Supabase SQL editor
++```
++
++## 🔒 Privacy
++
++SnapJigsaw never uploads your photos anywhere by default. Captured images,
++filters, and your polaroid gallery are processed and stored entirely in your
++browser (`localStorage`), and the camera stream is released as soon as you
++navigate away from the capture screen.
++
++If you opt in to cloud sync (see above), only your saved polaroids are
++uploaded — to your own Supabase project, under your account — never
++anything else, and never automatically without you setting it up first.
++
++## 🧪 Testing & CI
++
++Unit tests cover the core puzzle logic (`src/utils/puzzleHelper.ts`) —
++scrambling never produces an already-solved board, no pieces are lost or
++duplicated during a shuffle, and the shuffle doesn't mutate its input. A
++GitHub Actions workflow (`.github/workflows/ci.yml`) runs lint, tests, and a
++type-checked production build on every push and pull request.
++
++## 🛠️ Linting
++
++Linting is handled by [oxlint](https://oxc.rs/) with type-aware rules enabled
++(see `.oxlintrc.json`), catching issues like unhandled promises, `any` usage,
++and incorrect React hook dependencies at lint time rather than at runtime.
+diff --git a/package.json b/package.json
+index 5f2c1af..e2e4e00 100644
+--- a/package.json
++++ b/package.json
+@@ -7,22 +7,31 @@
+     "dev": "vite",
+     "build": "tsc -b && vite build",
+     "lint": "oxlint",
++    "test": "vitest run",
++    "test:watch": "vitest",
+     "preview": "vite preview"
+   },
+   "dependencies": {
++    "@supabase/supabase-js": "^2.110.0",
+     "canvas-confetti": "^1.9.4",
+     "lucide-react": "^1.22.0",
+     "react": "^19.2.7",
+-    "react-dom": "^19.2.7"
++    "react-dom": "^19.2.7",
++    "react-router-dom": "^7.18.1"
+   },
+   "devDependencies": {
++    "@testing-library/jest-dom": "^6.9.1",
++    "@testing-library/react": "^16.3.2",
+     "@types/canvas-confetti": "^1.9.0",
+     "@types/node": "^24.13.2",
+     "@types/react": "^19.2.17",
+     "@types/react-dom": "^19.2.3",
+     "@vitejs/plugin-react": "^6.0.3",
++    "jsdom": "^29.1.1",
+     "oxlint": "^1.71.0",
++    "oxlint-tsgolint": "^0.24.0",
+     "typescript": "~6.0.2",
+-    "vite": "^8.1.1"
++    "vite": "^8.1.1",
++    "vitest": "^4.1.9"
+   }
+ }
+diff --git a/public/sw.js b/public/sw.js
+index b983c89..8022ad1 100644
+--- a/public/sw.js
++++ b/public/sw.js
+@@ -24,6 +24,7 @@ self.addEventListener('activate', (event) => {
+           if (key !== CACHE_NAME) {
+             return caches.delete(key);
+           }
++          return Promise.resolve();
+         })
+       );
+     })
+diff --git a/src/App.css b/src/App.css
+index 6135fdb..cfdb07b 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -691,6 +691,125 @@
+   100% { opacity: 0; }
+ }
+ 
++.control-btn:disabled {
++  opacity: 0.35;
++  cursor: not-allowed;
++}
++
++.control-btn:disabled:hover {
++  background: rgba(255, 255, 255, 0.05);
++  color: var(--text-secondary);
++}
++
++/* Keyboard focus ring for puzzle pieces (arrow-key navigable) */
++.puzzle-piece:focus-visible {
++  outline: 2px solid var(--accent-cyan);
++  outline-offset: 2px;
++}
++
++/* Solve Progress Indicator */
++.puzzle-progress {
++  display: flex;
++  flex-direction: column;
++  gap: 6px;
++}
++
++.puzzle-progress-label {
++  font-size: 13px;
++  color: var(--text-secondary);
++  font-weight: 500;
++}
++
++.progress-bar-track {
++  width: 100%;
++  height: 8px;
++  border-radius: 99px;
++  background: rgba(255, 255, 255, 0.06);
++  overflow: hidden;
++}
++
++.progress-bar-fill {
++  height: 100%;
++  border-radius: 99px;
++  background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
++  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
++}
++
++/* Discard Confirmation Modal */
++.modal-overlay {
++  position: fixed;
++  inset: 0;
++  background: rgba(8, 7, 12, 0.7);
++  backdrop-filter: blur(4px);
++  display: flex;
++  justify-content: center;
++  align-items: center;
++  padding: 20px;
++  z-index: 100;
++}
++
++.modal-card {
++  max-width: 380px;
++  width: 100%;
++  padding: 28px;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  text-align: center;
++  gap: 10px;
++}
++
++.modal-icon {
++  color: var(--error);
++  margin-bottom: 4px;
++}
++
++.modal-title {
++  font-size: 19px;
++  font-weight: 700;
++  color: var(--text-primary);
++}
++
++.modal-desc {
++  font-size: 14px;
++  color: var(--text-secondary);
++  line-height: 1.5;
++}
++
++.modal-actions {
++  display: flex;
++  gap: 12px;
++  margin-top: 12px;
++  width: 100%;
++}
++
++.modal-actions button {
++  flex: 1;
++  justify-content: center;
++}
++
++.text-input {
++  flex: 1;
++  background: rgba(255, 255, 255, 0.05);
++  border: 1px solid var(--panel-border);
++  border-radius: 10px;
++  padding: 10px 14px;
++  color: var(--text-primary);
++  font-size: 15px;
++  font-family: var(--font-sans);
++}
++
++.text-input:focus {
++  outline: none;
++  border-color: var(--accent-cyan);
++}
++
++.error-text {
++  color: var(--error);
++  font-size: 13px;
++  margin: 0;
++}
++
+ .puzzle-footer {
+   width: 100%;
+   display: flex;
+diff --git a/src/App.tsx b/src/App.tsx
+index e70a7b8..6eabfcc 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,14 +1,18 @@
+ import { useState, useEffect } from 'react';
+-import { Camera, Image as ImageIcon, Sparkles, Trophy, ShieldCheck } from 'lucide-react';
++import { Camera, Image as ImageIcon, Sparkles, Trophy, ShieldCheck, Cloud, CloudOff, LogOut } from 'lucide-react';
+ import { CameraCapture } from './components/CameraCapture';
+ import { FilterSelector } from './components/FilterSelector';
+ import { JigsawPuzzle } from './components/JigsawPuzzle';
+ import { PolaroidReveal } from './components/PolaroidReveal';
+ import { PolaroidWall } from './components/PolaroidWall';
++import { LoginScreen } from './components/LoginScreen';
++import { useAuth } from './hooks/useAuth';
++import { isSupabaseConfigured } from './lib/supabaseClient';
++import { fetchPolaroids, uploadPolaroid, deletePolaroid as deleteRemotePolaroid } from './lib/polaroidSync';
+ import type { FilterType } from './utils/imageFilters';
+ import './App.css';
+ 
+-type Screen = 'LANDING' | 'CAPTURE' | 'FILTER' | 'PUZZLE' | 'REVEAL' | 'WALL';
++type Screen = 'LANDING' | 'CAPTURE' | 'FILTER' | 'PUZZLE' | 'REVEAL' | 'WALL' | 'LOGIN';
+ 
+ interface Polaroid {
+   id: string;
+@@ -16,9 +20,14 @@ interface Polaroid {
+   caption: string;
+   date: string;
+   frameStyle: string;
++  /** Present only for polaroids synced to Supabase. */
++  imagePath?: string;
++  shareSlug?: string | null;
+ }
+ 
+ function App() {
++  const { session, isLoading: authLoading, signOut } = useAuth();
++
+   // Screen and Flow States
+   const [screen, setScreen] = useState<Screen>('LANDING');
+   const [rawPhoto, setRawPhoto] = useState<string | null>(null);
+@@ -32,26 +41,81 @@ function App() {
+   const [streakCount, setStreakCount] = useState<number>(0);
+   const [hasDiscardedInStreak, setHasDiscardedInStreak] = useState<boolean>(false);
+   const [polaroids, setPolaroids] = useState<Polaroid[]>([]);
++  const [isSyncing, setIsSyncing] = useState(false);
+ 
+-  // Load polaroids from localStorage on mount
++  // Load the streak from localStorage (always local — it's per-device progress, not a memory to sync)
+   useEffect(() => {
+     try {
+-      const stored = localStorage.getItem('snapjigsaw_polaroids');
+-      if (stored) {
+-        setPolaroids(JSON.parse(stored));
+-      }
+-      
+       const storedStreak = localStorage.getItem('snapjigsaw_streak');
+       if (storedStreak) {
+         setStreakCount(parseInt(storedStreak, 10));
+       }
+     } catch (err) {
+-      console.error('Failed to load saved state from localStorage:', err);
++      console.error('Failed to load saved streak from localStorage:', err);
+     }
+   }, []);
+ 
++  // Load polaroids: from Supabase when signed in (migrating any local-only
++  // ones up on first sync), otherwise from localStorage as before.
++  useEffect(() => {
++    if (authLoading) return;
++
++    let active = true;
++
++    async function loadPolaroids() {
++      if (session && isSupabaseConfigured) {
++        setIsSyncing(true);
++        try {
++          const migratedFlag = `snapjigsaw_migrated_${session.user.id}`;
++          const localRaw = localStorage.getItem('snapjigsaw_polaroids');
++          const localPolaroids: Polaroid[] = localRaw ? JSON.parse(localRaw) : [];
++
++          if (localPolaroids.length > 0 && !localStorage.getItem(migratedFlag)) {
++            // One-time push of pre-existing local polaroids up to this account.
++            for (const p of localPolaroids) {
++              try {
++                await uploadPolaroid(session.user.id, {
++                  dataUrl: p.imageUrl,
++                  caption: p.caption,
++                  date: p.date,
++                  frameStyle: p.frameStyle,
++                });
++              } catch (err) {
++                console.error('Failed to migrate a local polaroid to the cloud:', err);
++              }
++            }
++            localStorage.setItem(migratedFlag, 'true');
++          }
++
++          const remote = await fetchPolaroids(session.user.id);
++          if (active) {
++            setPolaroids(remote);
++          }
++        } catch (err) {
++          console.error('Failed to load polaroids from Supabase:', err);
++        } finally {
++          if (active) setIsSyncing(false);
++        }
++      } else {
++        try {
++          const stored = localStorage.getItem('snapjigsaw_polaroids');
++          if (active && stored) {
++            setPolaroids(JSON.parse(stored));
++          }
++        } catch (err) {
++          console.error('Failed to load saved polaroids from localStorage:', err);
++        }
++      }
++    }
++
++    void loadPolaroids();
++    return () => {
++      active = false;
++    };
++  }, [session, authLoading]);
++
+   // Save state helpers
+-  const savePolaroids = (updated: Polaroid[]) => {
++  const saveLocalPolaroids = (updated: Polaroid[]) => {
+     setPolaroids(updated);
+     localStorage.setItem('snapjigsaw_polaroids', JSON.stringify(updated));
+   };
+@@ -94,26 +158,48 @@ function App() {
+     setScreen('CAPTURE');
+   };
+ 
+-  const handlePolaroidSaved = (newPolaroid: Polaroid) => {
+-    // Save to Polaroid Wall gallery database
+-    const updated = [newPolaroid, ...polaroids];
+-    savePolaroids(updated);
++  const handlePolaroidSaved = async (newPolaroid: Polaroid) => {
++    if (session && isSupabaseConfigured) {
++      try {
++        const synced = await uploadPolaroid(session.user.id, {
++          dataUrl: newPolaroid.imageUrl,
++          caption: newPolaroid.caption,
++          date: newPolaroid.date,
++          frameStyle: newPolaroid.frameStyle,
++        });
++        setPolaroids((prev) => [synced, ...prev]);
++      } catch (err) {
++        console.error('Failed to sync new polaroid, saving locally instead:', err);
++        saveLocalPolaroids([newPolaroid, ...polaroids]);
++      }
++    } else {
++      saveLocalPolaroids([newPolaroid, ...polaroids]);
++    }
+ 
+     // Reset streak and discard tracking after successful Polaroid Generation
+     updateStreak(0);
+     setHasDiscardedInStreak(false);
+-    
++
+     // Clear temp photos
+     setRawPhoto(null);
+     setFilteredPhoto(null);
+-    
++
+     // Return to the Polaroid Scrapbook Wall!
+     setScreen('WALL');
+   };
+ 
+-  const handleDeletePolaroid = (id: string) => {
+-    const updated = polaroids.filter((p) => p.id !== id);
+-    savePolaroids(updated);
++  const handleDeletePolaroid = async (id: string) => {
++    if (session && isSupabaseConfigured) {
++      const target = polaroids.find((p) => p.id === id);
++      try {
++        await deleteRemotePolaroid(id, target?.imagePath);
++        setPolaroids((prev) => prev.filter((p) => p.id !== id));
++      } catch (err) {
++        console.error('Failed to delete synced polaroid:', err);
++      }
++    } else {
++      saveLocalPolaroids(polaroids.filter((p) => p.id !== id));
++    }
+   };
+ 
+   const handleStartCapture = () => {
+@@ -147,11 +233,28 @@ function App() {
+               <Trophy size={16} className="app-logo" /> Streak: {streakCount}/3
+             </div>
+           )}
++          {isSupabaseConfigured && (
++            session ? (
++              <button
++                className="btn-secondary"
++                onClick={signOut}
++                title={`Signed in as ${session.user.email}`}
++              >
++                <Cloud size={16} /> {isSyncing ? 'Syncing...' : 'Synced'} <LogOut size={14} />
++              </button>
++            ) : (
++              <button className="btn-secondary" onClick={() => setScreen('LOGIN')}>
++                <CloudOff size={16} /> Sync Wall
++              </button>
++            )
++          )}
+         </div>
+       </header>
+ 
+       {/* Main Container Area */}
+       <main className="app-main">
++        {screen === 'LOGIN' && <LoginScreen onBack={() => setScreen('LANDING')} />}
++
+         {screen === 'LANDING' && (
+           <div className="glass-panel landing-card">
+             <div className="privacy-badge">
+@@ -257,6 +360,7 @@ function App() {
+             polaroids={polaroids}
+             onDelete={handleDeletePolaroid}
+             onBack={() => setScreen('LANDING')}
++            canShareLink={Boolean(session) && isSupabaseConfigured}
+           />
+         )}
+       </main>
+diff --git a/src/components/CameraCapture.tsx b/src/components/CameraCapture.tsx
+index f85f1d3..08136f2 100644
+--- a/src/components/CameraCapture.tsx
++++ b/src/components/CameraCapture.tsx
+@@ -1,4 +1,4 @@
+-import React, { useRef, useState, useEffect } from 'react';
++import React, { useRef, useState, useEffect, useCallback } from 'react';
+ import { Camera, RotateCw, RefreshCw, Check, ArrowRight } from 'lucide-react';
+ import { playBeep, playShutter } from '../utils/soundHelper';
+ 
+@@ -19,24 +19,28 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack
+ 
+   // Check for multiple video inputs (cameras)
+   useEffect(() => {
+-    navigator.mediaDevices.enumerateDevices().then((devices) => {
+-      const videoDevices = devices.filter((device) => device.kind === 'videoinput');
+-      setHasMultipleCameras(videoDevices.length > 1);
+-    });
++    navigator.mediaDevices
++      .enumerateDevices()
++      .then((devices) => {
++        const videoDevices = devices.filter((device) => device.kind === 'videoinput');
++        setHasMultipleCameras(videoDevices.length > 1);
++      })
++      .catch((err) => {
++        console.warn('Unable to enumerate camera devices:', err);
++      });
+   }, []);
+ 
+-  // Initialize and clean up camera stream
+-  useEffect(() => {
+-    if (capturedPhoto) return; // don't start stream if we already have a captured photo
+-    
+-    startCamera();
+-
+-    return () => {
+-      stopCamera();
+-    };
+-  }, [facingMode, capturedPhoto]);
++  const stopCamera = useCallback(() => {
++    if (streamRef.current) {
++      streamRef.current.getTracks().forEach((track) => track.stop());
++      streamRef.current = null;
++    }
++    if (videoRef.current) {
++      videoRef.current.srcObject = null;
++    }
++  }, []);
+ 
+-  const startCamera = async () => {
++  const startCamera = useCallback(async () => {
+     setPermissionState('loading');
+     stopCamera();
+ 
+@@ -45,7 +49,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack
+         facingMode: facingMode,
+         width: { ideal: 1024 },
+         height: { ideal: 768 },
+-        aspectRatio: { ideal: 4/3 }
++        aspectRatio: { ideal: 4 / 3 }
+       },
+       audio: false
+     };
+@@ -61,17 +65,18 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack
+       console.error('Camera permission denied or error:', err);
+       setPermissionState('denied');
+     }
+-  };
++  }, [facingMode, stopCamera]);
+ 
+-  const stopCamera = () => {
+-    if (streamRef.current) {
+-      streamRef.current.getTracks().forEach((track) => track.stop());
+-      streamRef.current = null;
+-    }
+-    if (videoRef.current) {
+-      videoRef.current.srcObject = null;
+-    }
+-  };
++  // Initialize and clean up camera stream
++  useEffect(() => {
++    if (capturedPhoto) return; // don't start stream if we already have a captured photo
++
++    void startCamera();
++
++    return () => {
++      stopCamera();
++    };
++  }, [facingMode, capturedPhoto, startCamera, stopCamera]);
+ 
+   const switchCamera = () => {
+     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+@@ -82,25 +87,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack
+     setCountdown(4);
+   };
+ 
+-  // Countdown timer loop
+-  useEffect(() => {
+-    if (countdown === null) return;
+-
+-    if (countdown > 0) {
+-      // Play a beep sound on each tick
+-      playBeep();
+-      const timer = setTimeout(() => {
+-        setCountdown(countdown - 1);
+-      }, 1000);
+-      return () => clearTimeout(timer);
+-    } else {
+-      // Countdown finished -> Capture Photo
+-      capturePhoto();
+-      setCountdown(null);
+-    }
+-  }, [countdown]);
+-
+-  const capturePhoto = () => {
++  const capturePhoto = useCallback(() => {
+     if (!videoRef.current) return;
+ 
+     const video = videoRef.current;
+@@ -125,14 +112,32 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack
+ 
+     // Save as JPEG
+     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+-    
++
+     // Stop camera feed after shutter sound plays
+     setTimeout(() => {
+       setFlashActive(false);
+       setCapturedPhoto(dataUrl);
+       stopCamera();
+     }, 250);
+-  };
++  }, [facingMode, stopCamera]);
++
++  // Countdown timer loop
++  useEffect(() => {
++    if (countdown === null) return;
++
++    if (countdown > 0) {
++      // Play a beep sound on each tick
++      playBeep();
++      const timer = setTimeout(() => {
++        setCountdown(countdown - 1);
++      }, 1000);
++      return () => clearTimeout(timer);
++    } else {
++      // Countdown finished -> Capture Photo
++      capturePhoto();
++      setCountdown(null);
++    }
++  }, [countdown, capturePhoto]);
+ 
+   const handleRetake = () => {
+     setCapturedPhoto(null);
+diff --git a/src/components/FilterSelector.tsx b/src/components/FilterSelector.tsx
+index 324015f..12c6c16 100644
+--- a/src/components/FilterSelector.tsx
++++ b/src/components/FilterSelector.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useEffect } from 'react';
++import { useState, useEffect, useCallback } from 'react';
+ import { FILTER_OPTIONS, applyFilter } from '../utils/imageFilters';
+ import type { FilterType } from '../utils/imageFilters';
+ import { Sparkles, ArrowRight } from 'lucide-react';
+@@ -16,42 +16,58 @@ export const FilterSelector: React.FC<FilterSelectorProps> = ({
+ }) => {
+   const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
+   const [previewImage, setPreviewImage] = useState<string>(photoDataUrl);
+-  const [thumbnails, setThumbnails] = useState<Record<FilterType, string>>({} as any);
++  const [thumbnails, setThumbnails] = useState<Record<FilterType, string>>(
++    {} as Record<FilterType, string>
++  );
+   const [isLoading, setIsLoading] = useState(true);
+ 
++  // Loads a data URL into an <img>, rejecting on decode failure instead of hanging forever.
++  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
++    return new Promise((resolve, reject) => {
++      const img = new Image();
++      img.onload = () => resolve(img);
++      img.onerror = () => reject(new Error('Failed to load image for filtering.'));
++      img.src = src;
++    });
++  }, []);
++
+   // Generate thumbnail sizes of the photo for preview tiles
+   useEffect(() => {
++    let active = true;
++
+     async function generateThumbnails() {
+       setIsLoading(true);
+       try {
+         const thumbCanvas = document.createElement('canvas');
+         const thumbCtx = thumbCanvas.getContext('2d');
+-        const img = new Image();
+-        img.src = photoDataUrl;
+-
+-        await new Promise((resolve) => {
+-          img.onload = resolve;
+-        });
++        const img = await loadImage(photoDataUrl);
+ 
+         // Small dimensions for thumbnail computation to keep it fast
+         thumbCanvas.width = 120;
+         thumbCanvas.height = 90;
+         thumbCtx?.drawImage(img, 0, 0, 120, 90);
+ 
+-        const newThumbs: Record<FilterType, string> = {} as any;
++        const newThumbs = {} as Record<FilterType, string>;
+         for (const option of FILTER_OPTIONS) {
+           newThumbs[option.id] = await applyFilter(thumbCanvas, option.id);
+         }
+-        setThumbnails(newThumbs);
++        if (active) {
++          setThumbnails(newThumbs);
++        }
+       } catch (err) {
+         console.error('Failed to generate filter thumbnails:', err);
+       } finally {
+-        setIsLoading(false);
++        if (active) {
++          setIsLoading(false);
++        }
+       }
+     }
+ 
+-    generateThumbnails();
+-  }, [photoDataUrl]);
++    void generateThumbnails();
++    return () => {
++      active = false;
++    };
++  }, [photoDataUrl, loadImage]);
+ 
+   // Apply filter to the main preview image when selection changes
+   useEffect(() => {
+@@ -62,11 +78,7 @@ export const FilterSelector: React.FC<FilterSelectorProps> = ({
+         return;
+       }
+       try {
+-        const img = new Image();
+-        img.src = photoDataUrl;
+-        await new Promise((resolve) => {
+-          img.onload = resolve;
+-        });
++        const img = await loadImage(photoDataUrl);
+         const result = await applyFilter(img, selectedFilter);
+         if (active) {
+           setPreviewImage(result);
+@@ -75,21 +87,21 @@ export const FilterSelector: React.FC<FilterSelectorProps> = ({
+         console.error('Error updating main preview filter:', err);
+       }
+     }
+-    updateMainPreview();
++    void updateMainPreview();
+     return () => {
+       active = false;
+     };
+-  }, [selectedFilter, photoDataUrl]);
++  }, [selectedFilter, photoDataUrl, loadImage]);
+ 
+   const handleConfirm = async () => {
+-    // Generate full-resolution filtered image
+-    const img = new Image();
+-    img.src = photoDataUrl;
+-    await new Promise((resolve) => {
+-      img.onload = resolve;
+-    });
+-    const finalDataUrl = await applyFilter(img, selectedFilter);
+-    onFilterSelected(finalDataUrl, selectedFilter);
++    try {
++      // Generate full-resolution filtered image
++      const img = await loadImage(photoDataUrl);
++      const finalDataUrl = await applyFilter(img, selectedFilter);
++      onFilterSelected(finalDataUrl, selectedFilter);
++    } catch (err) {
++      console.error('Failed to apply filter on confirm:', err);
++    }
+   };
+ 
+   return (
+diff --git a/src/components/JigsawPuzzle.tsx b/src/components/JigsawPuzzle.tsx
+index 1638170..695b76c 100644
+--- a/src/components/JigsawPuzzle.tsx
++++ b/src/components/JigsawPuzzle.tsx
+@@ -1,5 +1,5 @@
+ import React, { useState, useEffect, useRef } from 'react';
+-import { Eye, EyeOff, RotateCw, Trash2, ArrowRight, Award, Trophy, Timer } from 'lucide-react';
++import { Eye, EyeOff, RotateCw, Trash2, ArrowRight, Award, Trophy, Timer, Undo2, AlertTriangle } from 'lucide-react';
+ import { createPuzzlePieces, scramblePieces, checkIsSolved } from '../utils/puzzleHelper';
+ import type { PuzzlePiece } from '../utils/puzzleHelper';
+ import { playSnap } from '../utils/soundHelper';
+@@ -27,15 +27,22 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+   const gridSize = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 4 : 5;
+   
+   const [pieces, setPieces] = useState<PuzzlePiece[]>([]);
++  const [history, setHistory] = useState<PuzzlePiece[][]>([]);
+   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
+   const [elapsedTime, setElapsedTime] = useState(0);
+   const [showGhost, setShowGhost] = useState(true);
+   const [ghostOpacity, setGhostOpacity] = useState(0.35);
+   const [isWin, setIsWin] = useState(false);
+   const [hasStarted, setHasStarted] = useState(false);
++  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+ 
+   const timerRef = useRef<number | null>(null);
+   const ghostTimeoutRef = useRef<number | null>(null);
++  // Indexed by grid slot (currentIndex), so arrow-key navigation can jump
++  // straight to the DOM node occupying an adjacent slot.
++  const slotRefs = useRef<Record<number, HTMLDivElement | null>>({});
++
++  const MAX_HISTORY = 20;
+ 
+   // Initialize and slice puzzle
+   useEffect(() => {
+@@ -43,6 +50,8 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+       const initialPieces = await createPuzzlePieces(photoDataUrl, gridSize, rotationMode);
+       const scrambled = scramblePieces(initialPieces, rotationMode);
+       setPieces(scrambled);
++      setHistory([]);
++      setSelectedPieceId(null);
+       setHasStarted(true);
+       setIsWin(false);
+       setElapsedTime(0);
+@@ -51,7 +60,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+       setGhostOpacity(0.35);
+       triggerGhostFade();
+     }
+-    initPuzzle();
++    void initPuzzle();
+ 
+     return () => {
+       stopTimer();
+@@ -139,6 +148,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+ 
+   // Perform rotation
+   const rotatePiece = (pieceId: number) => {
++    setHistory((prev) => [...prev.slice(-(MAX_HISTORY - 1)), pieces]);
+     setPieces((prevPieces) => {
+       const updated = prevPieces.map((piece) => {
+         if (piece.id === pieceId) {
+@@ -161,6 +171,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+ 
+   // Perform swap
+   const swapPieces = (idA: number, idB: number) => {
++    setHistory((prev) => [...prev.slice(-(MAX_HISTORY - 1)), pieces]);
+     setPieces((prevPieces) => {
+       const pieceA = prevPieces.find((p) => p.id === idA);
+       const pieceB = prevPieces.find((p) => p.id === idB);
+@@ -201,13 +212,36 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+     }
+   };
+ 
++  const undoLastMove = () => {
++    if (history.length === 0 || isWin) return;
++    const previous = history[history.length - 1];
++    setHistory((prev) => prev.slice(0, -1));
++    setPieces(previous);
++    setSelectedPieceId(null);
++  };
++
++  const lockedCount = pieces.filter(
++    (p) => p.currentIndex === p.id && p.rotation === 0
++  ).length;
++  const totalPieces = gridSize * gridSize;
++
++  const requestDiscard = () => {
++    // A near-complete puzzle is easy to lose with a stray tap — confirm first.
++    setShowDiscardConfirm(true);
++  };
++
++  const confirmDiscard = () => {
++    setShowDiscardConfirm(false);
++    onDiscard();
++  };
++
+   const checkSolvedState = (currentPieces: PuzzlePiece[]) => {
+     if (checkIsSolved(currentPieces)) {
+       setIsWin(true);
+       stopTimer();
+       
+       // Fire confetti celebration
+-      confetti({
++      void confetti({
+         particleCount: 150,
+         spread: 80,
+         origin: { y: 0.6 }
+@@ -252,6 +286,42 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+     rotatePiece(pieceId);
+   };
+ 
++  // Keyboard support: arrow keys move focus across the grid, Enter/Space
++  // selects or swaps the focused piece, and "r" rotates the currently
++  // selected piece when rotation mode is active.
++  const handlePieceKeyDown = (e: React.KeyboardEvent, piece: PuzzlePiece) => {
++    const { key } = e;
++    const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
++
++    if (arrowKeys.includes(key)) {
++      e.preventDefault();
++      const row = Math.floor(piece.currentIndex / gridSize);
++      const col = piece.currentIndex % gridSize;
++      let targetRow = row;
++      let targetCol = col;
++
++      if (key === 'ArrowUp') targetRow = Math.max(0, row - 1);
++      if (key === 'ArrowDown') targetRow = Math.min(gridSize - 1, row + 1);
++      if (key === 'ArrowLeft') targetCol = Math.max(0, col - 1);
++      if (key === 'ArrowRight') targetCol = Math.min(gridSize - 1, col + 1);
++
++      const targetIndex = targetRow * gridSize + targetCol;
++      slotRefs.current[targetIndex]?.focus();
++      return;
++    }
++
++    if (key === 'Enter' || key === ' ') {
++      e.preventDefault();
++      handlePieceInteraction(piece.id);
++      return;
++    }
++
++    if ((key === 'r' || key === 'R') && rotationMode && selectedPieceId === piece.id) {
++      e.preventDefault();
++      rotatePiece(piece.id);
++    }
++  };
++
+   // Map out scrambled slots array to render grid in actual UI order
+   const sortedPiecesToRender = [...pieces].sort((a, b) => a.currentIndex - b.currentIndex);
+ 
+@@ -272,6 +342,14 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+           <span className="status-timer">{formatTime(elapsedTime)}</span>
+         </div>
+         <div className="status-controls">
++          <button
++            className="control-btn"
++            onClick={undoLastMove}
++            disabled={history.length === 0 || isWin}
++            title="Undo Last Move"
++          >
++            <Undo2 size={18} />
++          </button>
+           <button
+             className={`control-btn ${showGhost ? 'active' : ''}`}
+             onClick={toggleGhost}
+@@ -282,6 +360,19 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+         </div>
+       </div>
+ 
++      {/* Progress Indicator */}
++      <div className="puzzle-progress" aria-live="polite">
++        <span className="puzzle-progress-label">
++          {isWin ? 'Solved!' : `${lockedCount} / ${totalPieces} pieces placed`}
++        </span>
++        <div className="progress-bar-track">
++          <div
++            className="progress-bar-fill"
++            style={{ width: `${totalPieces === 0 ? 0 : (lockedCount / totalPieces) * 100}%` }}
++          />
++        </div>
++      </div>
++
+       {/* Main Board */}
+       <div className="puzzle-board-wrapper">
+         <div
+@@ -318,9 +409,21 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+                   onDrop={(e) => handleDrop(e, piece.id)}
+                 >
+                   <div
++                    ref={(el) => {
++                      slotRefs.current[piece.currentIndex] = el;
++                    }}
+                     draggable={!isLocked}
+                     onDragStart={(e) => handleDragStart(e, piece.id)}
+                     onClick={() => handlePieceInteraction(piece.id)}
++                    onKeyDown={(e) => handlePieceKeyDown(e, piece)}
++                    role="button"
++                    tabIndex={isLocked ? -1 : 0}
++                    aria-label={
++                      isLocked
++                        ? `Piece ${piece.id + 1}, correctly placed`
++                        : `Piece ${piece.id + 1}${isSelected ? ', selected' : ''}`
++                    }
++                    aria-pressed={isSelected}
+                     className={`puzzle-piece ${isSelected ? 'selected' : ''} ${isLocked ? 'correct-locked' : ''}`}
+                     style={{
+                       backgroundImage: `url(${piece.dataUrl})`,
+@@ -363,7 +466,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+ 
+       {/* Action Footer */}
+       <div className="puzzle-footer">
+-        <button className="btn-danger" onClick={onDiscard}>
++        <button className="btn-danger" onClick={requestDiscard}>
+           <Trash2 size={16} /> Discard & Start Over
+         </button>
+ 
+@@ -378,10 +481,33 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
+       <div className="camera-instructions" style={{ justifyContent: 'center' }}>
+         <span className="app-subtitle" style={{ textAlign: 'center' }}>
+           {rotationMode
+-            ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate"
+-            : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap"}
++            ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate | Keyboard: Arrows to move, Enter to select/swap, R to rotate"
++            : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap | Keyboard: Arrows to move, Enter to select/swap"}
+         </span>
+       </div>
++
++      {/* Discard Confirmation Modal */}
++      {showDiscardConfirm && (
++        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="discard-modal-title">
++          <div className="glass-panel modal-card">
++            <AlertTriangle size={28} className="modal-icon" />
++            <h3 id="discard-modal-title" className="modal-title">Discard this puzzle?</h3>
++            <p className="modal-desc">
++              {lockedCount > 0
++                ? `You've placed ${lockedCount} of ${totalPieces} pieces correctly. Discarding restarts with a new photo — your streak is safe, but this progress will be lost.`
++                : "This restarts with a new photo. Your streak is safe either way."}
++            </p>
++            <div className="modal-actions">
++              <button className="btn-secondary" onClick={() => setShowDiscardConfirm(false)}>
++                Keep Solving
++              </button>
++              <button className="btn-danger" onClick={confirmDiscard}>
++                <Trash2 size={16} /> Discard
++              </button>
++            </div>
++          </div>
++        </div>
++      )}
+     </div>
+   );
+ };
+diff --git a/src/components/LoginScreen.tsx b/src/components/LoginScreen.tsx
+new file mode 100644
+index 0000000..a75adf8
+--- /dev/null
++++ b/src/components/LoginScreen.tsx
+@@ -0,0 +1,83 @@
++import React, { useState } from 'react';
++import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
++import { useAuth } from '../hooks/useAuth';
++
++interface LoginScreenProps {
++  onBack: () => void;
++}
++
++export const LoginScreen: React.FC<LoginScreenProps> = ({ onBack }) => {
++  const { signInWithEmail } = useAuth();
++  const [email, setEmail] = useState('');
++  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
++  const [errorMsg, setErrorMsg] = useState('');
++
++  const handleSubmit = async (e: React.FormEvent) => {
++    e.preventDefault();
++    if (!email.trim()) return;
++
++    setStatus('sending');
++    const error = await signInWithEmail(email.trim());
++    if (error) {
++      setErrorMsg(error);
++      setStatus('error');
++    } else {
++      setStatus('sent');
++    }
++  };
++
++  if (status === 'sent') {
++    return (
++      <div className="glass-panel landing-card">
++        <CheckCircle2 size={48} style={{ color: 'var(--accent-cyan)' }} />
++        <h2 className="landing-title">Check your inbox</h2>
++        <p className="landing-desc">
++          We sent a sign-in link to <strong>{email}</strong>. Open it on this device (or any
++          device) to finish signing in — your wall will sync automatically.
++        </p>
++        <button className="btn-secondary" onClick={onBack}>
++          <ArrowLeft size={16} /> Back
++        </button>
++      </div>
++    );
++  }
++
++  return (
++    <div className="glass-panel landing-card">
++      <h2 className="landing-title">Sync your Polaroid Wall</h2>
++      <p className="landing-desc">
++        Sign in with a magic link — no password needed — to keep your wall in sync across
++        devices and share polaroids with a link.
++      </p>
++
++      <form onSubmit={handleSubmit} className="settings-section" style={{ width: '100%' }}>
++        <div className="toggle-setting-info" style={{ width: '100%' }}>
++          <label htmlFor="email-input" className="settings-label">Email address</label>
++          <div style={{ display: 'flex', gap: '8px', marginTop: '8px', width: '100%' }}>
++            <Mail size={18} style={{ alignSelf: 'center', color: 'var(--text-secondary)' }} />
++            <input
++              id="email-input"
++              type="email"
++              required
++              value={email}
++              onChange={(e) => setEmail(e.target.value)}
++              placeholder="you@example.com"
++              className="text-input"
++              autoFocus
++            />
++          </div>
++        </div>
++
++        {status === 'error' && <p className="error-text">{errorMsg}</p>}
++
++        <button type="submit" className="btn-primary" disabled={status === 'sending'} style={{ width: '100%' }}>
++          {status === 'sending' ? 'Sending link...' : 'Send Magic Link'}
++        </button>
++      </form>
++
++      <button className="btn-secondary" onClick={onBack}>
++        <ArrowLeft size={16} /> Continue without an account
++      </button>
++    </div>
++  );
++};
+diff --git a/src/components/PolaroidReveal.tsx b/src/components/PolaroidReveal.tsx
+index d90a45d..71cf61f 100644
+--- a/src/components/PolaroidReveal.tsx
++++ b/src/components/PolaroidReveal.tsx
+@@ -46,23 +46,31 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
+ 
+   // 1. Run AI Enhancement Pass
+   useEffect(() => {
++    let active = true;
++
+     async function runEnhancement() {
+       setIsEnhancing(true);
+       try {
+         const result = await enhanceImage(photoDataUrl);
++        if (!active) return;
+         setEnhancedPhoto(result);
+         setIsEnhancing(false);
+-        
++
+         // 2. Start developing chemical reveal animation
+         setIsDeveloping(true);
+       } catch (err) {
+         console.error('Enhancement pipeline failed, falling back:', err);
++        if (!active) return;
+         setEnhancedPhoto(photoDataUrl);
+         setIsEnhancing(false);
+         setIsDeveloping(true);
+       }
+     }
+-    runEnhancement();
++    void runEnhancement();
++
++    return () => {
++      active = false;
++    };
+   }, [photoDataUrl]);
+ 
+   // Handle chemical reveal fade duration
+diff --git a/src/components/PolaroidWall.tsx b/src/components/PolaroidWall.tsx
+index dab634e..e3251f1 100644
+--- a/src/components/PolaroidWall.tsx
++++ b/src/components/PolaroidWall.tsx
+@@ -1,5 +1,6 @@
+ import React, { useState } from 'react';
+-import { Camera, Image as ImageIcon, Trash2, Download, Share2, X, ArrowLeft } from 'lucide-react';
++import { Camera, Image as ImageIcon, Trash2, Download, Share2, Link2, Check, X, ArrowLeft } from 'lucide-react';
++import { getOrCreateShareLink } from '../lib/polaroidSync';
+ 
+ interface Polaroid {
+   id: string;
+@@ -7,16 +8,22 @@ interface Polaroid {
+   caption: string;
+   date: string;
+   frameStyle: string;
++  imagePath?: string;
++  shareSlug?: string | null;
+ }
+ 
+ interface PolaroidWallProps {
+   polaroids: Polaroid[];
+   onDelete: (id: string) => void;
+   onBack: () => void;
++  /** Whether the user is signed in and synced, so a persistent share link can be generated. */
++  canShareLink?: boolean;
+ }
+ 
+-export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack }) => {
++export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack, canShareLink = false }) => {
+   const [activeLightbox, setActiveLightbox] = useState<Polaroid | null>(null);
++  const [linkCopied, setLinkCopied] = useState(false);
++  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+ 
+   // Generate a random rotation/tilt angle for each polaroid on the scrapbook wall
+   // We seed this based on the ID string to keep the tilt angle consistent across updates.
+@@ -168,6 +175,21 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
+     }
+   };
+ 
++  const handleCopyShareLink = async (polaroid: Polaroid) => {
++    setIsGeneratingLink(true);
++    try {
++      const url = await getOrCreateShareLink(polaroid.id, polaroid.shareSlug ?? null);
++      await navigator.clipboard.writeText(url);
++      setLinkCopied(true);
++      setTimeout(() => setLinkCopied(false), 2000);
++    } catch (err) {
++      console.error('Failed to create share link:', err);
++      alert('Could not create a share link right now. Please try again.');
++    } finally {
++      setIsGeneratingLink(false);
++    }
++  };
++
+   const handleDeleteWithConfirmation = (id: string) => {
+     if (window.confirm('Are you sure you want to permanently delete this polaroid memory?')) {
+       onDelete(id);
+@@ -254,6 +276,17 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
+               <button className="btn-secondary" onClick={() => handleShare(activeLightbox)}>
+                 <Share2 size={16} /> Share
+               </button>
++              {canShareLink && (
++                <button
++                  className="btn-secondary"
++                  onClick={() => handleCopyShareLink(activeLightbox)}
++                  disabled={isGeneratingLink}
++                  title="Copy a public link anyone can open"
++                >
++                  {linkCopied ? <Check size={16} /> : <Link2 size={16} />}
++                  {linkCopied ? 'Link Copied!' : 'Copy Link'}
++                </button>
++              )}
+               <button className="btn-danger" onClick={() => handleDeleteWithConfirmation(activeLightbox.id)}>
+                 <Trash2 size={16} /> Delete Memory
+               </button>
+diff --git a/src/components/SharedPolaroidView.tsx b/src/components/SharedPolaroidView.tsx
+new file mode 100644
+index 0000000..7e7fea0
+--- /dev/null
++++ b/src/components/SharedPolaroidView.tsx
+@@ -0,0 +1,93 @@
++import React, { useEffect, useState } from 'react';
++import { Link, useParams } from 'react-router-dom';
++import { Sparkles, ImageOff } from 'lucide-react';
++import { fetchSharedPolaroid, type SyncedPolaroid } from '../lib/polaroidSync';
++import { isSupabaseConfigured } from '../lib/supabaseClient';
++
++export const SharedPolaroidView: React.FC = () => {
++  const { slug } = useParams<{ slug: string }>();
++  const [polaroid, setPolaroid] = useState<SyncedPolaroid | null>(null);
++  const [status, setStatus] = useState<'loading' | 'found' | 'not-found' | 'error'>('loading');
++
++  useEffect(() => {
++    let active = true;
++
++    async function load() {
++      if (!slug || !isSupabaseConfigured) {
++        setStatus('not-found');
++        return;
++      }
++      try {
++        const result = await fetchSharedPolaroid(slug);
++        if (!active) return;
++        setPolaroid(result);
++        setStatus(result ? 'found' : 'not-found');
++      } catch (err) {
++        console.error('Failed to load shared polaroid:', err);
++        if (active) setStatus('error');
++      }
++    }
++
++    void load();
++    return () => {
++      active = false;
++    };
++  }, [slug]);
++
++  return (
++    <div className="app-container">
++      <header className="app-header">
++        <Link to="/" className="app-title-wrapper" style={{ textDecoration: 'none' }}>
++          <Sparkles className="app-logo" size={24} />
++          <div>
++            <h1 className="app-title">SnapJigsaw</h1>
++            <p className="app-subtitle">Selfies Turned Solving Fun</p>
++          </div>
++        </Link>
++      </header>
++
++      <main className="app-main">
++        {status === 'loading' && (
++          <div className="glass-panel landing-card">
++            <p className="landing-desc">Loading shared polaroid...</p>
++          </div>
++        )}
++
++        {(status === 'not-found' || status === 'error') && (
++          <div className="glass-panel empty-wall">
++            <ImageOff className="empty-wall-icon" size={64} />
++            <h3>{status === 'error' ? 'Something went wrong' : 'Polaroid not found'}</h3>
++            <p className="app-subtitle" style={{ maxWidth: '340px' }}>
++              This link may have expired, or the polaroid is no longer shared.
++            </p>
++            <Link to="/" className="btn-primary">
++              <Sparkles size={18} /> Make Your Own
++            </Link>
++          </div>
++        )}
++
++        {status === 'found' && polaroid && (
++          <div className="lightbox-content" style={{ position: 'static' }}>
++            <div className={`polaroid-frame style-${polaroid.frameStyle}`} style={{ transform: 'none' }}>
++              <div className="polaroid-image-container">
++                <img
++                  src={polaroid.imageUrl}
++                  alt={polaroid.caption}
++                  className="polaroid-photo developed"
++                />
++              </div>
++              <div className="polaroid-info">
++                <span className="polaroid-caption">{polaroid.caption}</span>
++                <span className="polaroid-date">{polaroid.date}</span>
++              </div>
++            </div>
++
++            <Link to="/" className="btn-primary" style={{ marginTop: '20px' }}>
++              <Sparkles size={18} /> Snap &amp; Solve Your Own
++            </Link>
++          </div>
++        )}
++      </main>
++    </div>
++  );
++};
+diff --git a/src/hooks/AuthContext.ts b/src/hooks/AuthContext.ts
+new file mode 100644
+index 0000000..7af59e4
+--- /dev/null
++++ b/src/hooks/AuthContext.ts
+@@ -0,0 +1,12 @@
++import { createContext } from 'react';
++import type { Session } from '@supabase/supabase-js';
++
++export interface AuthContextValue {
++  session: Session | null;
++  isLoading: boolean;
++  /** Sends a magic link to the given email. Resolves to an error message, or null on success. */
++  signInWithEmail: (email: string) => Promise<string | null>;
++  signOut: () => Promise<void>;
++}
++
++export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+diff --git a/src/hooks/AuthProvider.tsx b/src/hooks/AuthProvider.tsx
+new file mode 100644
+index 0000000..e3f375f
+--- /dev/null
++++ b/src/hooks/AuthProvider.tsx
+@@ -0,0 +1,57 @@
++import React, { useEffect, useState } from 'react';
++import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
++import { AuthContext, type AuthContextValue } from './AuthContext';
++import type { Session } from '@supabase/supabase-js';
++
++export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
++  const [session, setSession] = useState<Session | null>(null);
++  const [isLoading, setIsLoading] = useState(true);
++
++  useEffect(() => {
++    if (!isSupabaseConfigured) {
++      setIsLoading(false);
++      return;
++    }
++
++    supabase.auth
++      .getSession()
++      .then(({ data }) => {
++        setSession(data.session);
++        setIsLoading(false);
++      })
++      .catch((err) => {
++        console.error('Failed to load Supabase session:', err);
++        setIsLoading(false);
++      });
++
++    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
++      setSession(newSession);
++    });
++
++    return () => {
++      subscription.subscription.unsubscribe();
++    };
++  }, []);
++
++  const signInWithEmail = async (email: string): Promise<string | null> => {
++    if (!isSupabaseConfigured) {
++      return 'Sync is not configured for this deployment yet.';
++    }
++    const { error } = await supabase.auth.signInWithOtp({
++      email,
++      options: {
++        emailRedirectTo: window.location.origin,
++      },
++    });
++    return error ? error.message : null;
++  };
++
++  const signOut = async () => {
++    if (!isSupabaseConfigured) return;
++    await supabase.auth.signOut();
++  };
++
++  const value: AuthContextValue = { session, isLoading, signInWithEmail, signOut };
++
++  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
++};
+diff --git a/src/hooks/useAuth.ts b/src/hooks/useAuth.ts
+new file mode 100644
+index 0000000..4efbbed
+--- /dev/null
++++ b/src/hooks/useAuth.ts
+@@ -0,0 +1,10 @@
++import { useContext } from 'react';
++import { AuthContext, type AuthContextValue } from './AuthContext';
++
++export function useAuth(): AuthContextValue {
++  const ctx = useContext(AuthContext);
++  if (!ctx) {
++    throw new Error('useAuth must be used within an AuthProvider');
++  }
++  return ctx;
++}
+diff --git a/src/index.css b/src/index.css
+index d81d6b1..250f8cd 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -24,6 +24,7 @@
+ 
+   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+   --font-handwriting: 'Satisfy', cursive;
++  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+ 
+   /* Grid Layouts */
+   --safe-area-inset-bottom: 0px;
+diff --git a/src/lib/polaroidSync.ts b/src/lib/polaroidSync.ts
+new file mode 100644
+index 0000000..717a37d
+--- /dev/null
++++ b/src/lib/polaroidSync.ts
+@@ -0,0 +1,118 @@
++import { supabase } from './supabaseClient';
++
++export interface SyncedPolaroid {
++  id: string;
++  imageUrl: string;
++  imagePath: string;
++  caption: string;
++  date: string;
++  frameStyle: string;
++  shareSlug: string | null;
++}
++
++interface PolaroidRow {
++  id: string;
++  image_path: string;
++  caption: string;
++  frame_style: string;
++  taken_at: string;
++  share_slug: string | null;
++}
++
++function publicUrlFor(imagePath: string): string {
++  const { data } = supabase.storage.from('polaroids').getPublicUrl(imagePath);
++  return data.publicUrl;
++}
++
++function rowToSynced(row: PolaroidRow): SyncedPolaroid {
++  return {
++    id: row.id,
++    imageUrl: publicUrlFor(row.image_path),
++    imagePath: row.image_path,
++    caption: row.caption,
++    date: row.taken_at,
++    frameStyle: row.frame_style,
++    shareSlug: row.share_slug,
++  };
++}
++
++/** Fetches every polaroid belonging to the given user, newest first. */
++export async function fetchPolaroids(userId: string): Promise<SyncedPolaroid[]> {
++  const { data, error } = await supabase
++    .from('polaroids')
++    .select('id, image_path, caption, frame_style, taken_at, share_slug')
++    .eq('user_id', userId)
++    .order('created_at', { ascending: false });
++
++  if (error) throw error;
++  return (data ?? []).map(rowToSynced);
++}
++
++/**
++ * Uploads a data-URL image to storage and creates the corresponding row.
++ * Returns the newly synced polaroid (with its real Storage-backed URL).
++ */
++export async function uploadPolaroid(
++  userId: string,
++  params: { dataUrl: string; caption: string; date: string; frameStyle: string }
++): Promise<SyncedPolaroid> {
++  const imagePath = `${userId}/${crypto.randomUUID()}.jpg`;
++  const blob = await (await fetch(params.dataUrl)).blob();
++
++  const { error: uploadError } = await supabase.storage
++    .from('polaroids')
++    .upload(imagePath, blob, { contentType: 'image/jpeg' });
++  if (uploadError) throw uploadError;
++
++  const { data, error: insertError } = await supabase
++    .from('polaroids')
++    .insert({
++      user_id: userId,
++      image_path: imagePath,
++      caption: params.caption,
++      frame_style: params.frameStyle,
++      taken_at: params.date,
++    })
++    .select('id, image_path, caption, frame_style, taken_at, share_slug')
++    .single();
++
++  if (insertError) throw insertError;
++  return rowToSynced(data);
++}
++
++/** Deletes a polaroid row. (Storage cleanup is best-effort and non-blocking.) */
++export async function deletePolaroid(id: string, imagePath?: string): Promise<void> {
++  const { error } = await supabase.from('polaroids').delete().eq('id', id);
++  if (error) throw error;
++
++  if (imagePath) {
++    void supabase.storage.from('polaroids').remove([imagePath]);
++  }
++}
++
++/**
++ * Ensures a polaroid has a share slug, generating one if needed, and
++ * returns the full shareable URL.
++ */
++export async function getOrCreateShareLink(id: string, existingSlug: string | null): Promise<string> {
++  const slug = existingSlug || crypto.randomUUID().slice(0, 8);
++
++  if (!existingSlug) {
++    const { error } = await supabase.from('polaroids').update({ share_slug: slug }).eq('id', id);
++    if (error) throw error;
++  }
++
++  return `${window.location.origin}/share/${slug}`;
++}
++
++/** Fetches a single polaroid by its public share slug — no auth required. */
++export async function fetchSharedPolaroid(slug: string): Promise<SyncedPolaroid | null> {
++  const { data, error } = await supabase
++    .from('polaroids')
++    .select('id, image_path, caption, frame_style, taken_at, share_slug')
++    .eq('share_slug', slug)
++    .maybeSingle();
++
++  if (error) throw error;
++  return data ? rowToSynced(data) : null;
++}
+diff --git a/src/lib/supabaseClient.ts b/src/lib/supabaseClient.ts
+new file mode 100644
+index 0000000..071e5c3
+--- /dev/null
++++ b/src/lib/supabaseClient.ts
+@@ -0,0 +1,23 @@
++import { createClient } from '@supabase/supabase-js';
++
++const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
++const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
++
++// Sync/sharing features are optional — the app still works fully offline
++// (localStorage-only) if these env vars aren't configured. Callers should
++// check `isSupabaseConfigured` before relying on `supabase`.
++export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
++
++if (!isSupabaseConfigured) {
++  console.warn(
++    'Supabase env vars are not set. Cross-device sync and link sharing are disabled; ' +
++      'the app will fall back to local-only storage. See .env.example for setup.'
++  );
++}
++
++// When not configured, we still need a non-null export so imports don't
++// crash — point it at a placeholder that will simply fail any real request.
++export const supabase = createClient(
++  supabaseUrl || 'https://placeholder.supabase.co',
++  supabaseAnonKey || 'placeholder-anon-key'
++);
+diff --git a/src/main.tsx b/src/main.tsx
+index 1b2abd0..4afec33 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,11 +1,21 @@
+ import { StrictMode } from 'react'
+ import { createRoot } from 'react-dom/client'
++import { BrowserRouter, Routes, Route } from 'react-router-dom'
+ import './index.css'
+ import App from './App.tsx'
++import { AuthProvider } from './hooks/AuthProvider.tsx'
++import { SharedPolaroidView } from './components/SharedPolaroidView.tsx'
+ 
+ createRoot(document.getElementById('root')!).render(
+   <StrictMode>
+-    <App />
++    <AuthProvider>
++      <BrowserRouter>
++        <Routes>
++          <Route path="/share/:slug" element={<SharedPolaroidView />} />
++          <Route path="/*" element={<App />} />
++        </Routes>
++      </BrowserRouter>
++    </AuthProvider>
+   </StrictMode>,
+ )
+ 
+@@ -13,7 +23,7 @@ createRoot(document.getElementById('root')!).render(
+ if ('serviceWorker' in navigator && import.meta.env.PROD) {
+   window.addEventListener('load', () => {
+     navigator.serviceWorker.register('/sw.js')
+-      .then((reg) => console.log('Service worker registered successfully:', reg.scope))
++      .then((reg) => console.warn('Service worker registered successfully:', reg.scope))
+       .catch((err) => console.warn('Service worker registration failed:', err));
+   });
+ }
+diff --git a/src/utils/puzzleHelper.test.ts b/src/utils/puzzleHelper.test.ts
+new file mode 100644
+index 0000000..06b2574
+--- /dev/null
++++ b/src/utils/puzzleHelper.test.ts
+@@ -0,0 +1,99 @@
++import { describe, it, expect } from 'vitest';
++import { scramblePieces, checkIsSolved, DIFFICULTY_SETTINGS } from './puzzleHelper';
++import type { PuzzlePiece } from './puzzleHelper';
++
++/** Builds a solved 3x3 (9-piece) board: every piece at its own index, no rotation. */
++function buildSolvedBoard(count = 9): PuzzlePiece[] {
++  return Array.from({ length: count }, (_, i) => ({
++    id: i,
++    correctIndex: i,
++    currentIndex: i,
++    rotation: 0,
++    dataUrl: `data:piece-${i}`,
++  }));
++}
++
++describe('checkIsSolved', () => {
++  it('returns true when every piece is in its correct slot with no rotation', () => {
++    expect(checkIsSolved(buildSolvedBoard())).toBe(true);
++  });
++
++  it('returns false when a single piece is out of place', () => {
++    const board = buildSolvedBoard();
++    // Swap piece 0 and piece 1's positions.
++    board[0].currentIndex = 1;
++    board[1].currentIndex = 0;
++    expect(checkIsSolved(board)).toBe(false);
++  });
++
++  it('returns false when a piece is in the correct slot but rotated', () => {
++    const board = buildSolvedBoard();
++    board[0].rotation = 90;
++    expect(checkIsSolved(board)).toBe(false);
++  });
++
++  it('treats an empty board as solved (vacuous truth)', () => {
++    expect(checkIsSolved([])).toBe(true);
++  });
++});
++
++describe('scramblePieces', () => {
++  it('never returns an already-solved arrangement', () => {
++    // Run many times since shuffling is random; a flaky implementation would
++    // eventually leak a solved board across enough trials.
++    for (let trial = 0; trial < 50; trial++) {
++      const scrambled = scramblePieces(buildSolvedBoard(), false);
++      expect(checkIsSolved(scrambled)).toBe(false);
++    }
++  });
++
++  it('preserves the same set of pieces (no pieces lost, duplicated, or renamed)', () => {
++    const original = buildSolvedBoard();
++    const scrambled = scramblePieces(original, false);
++
++    const originalIds = original.map((p) => p.id).sort((a, b) => a - b);
++    const scrambledIds = scrambled.map((p) => p.id).sort((a, b) => a - b);
++    expect(scrambledIds).toEqual(originalIds);
++
++    const currentIndices = scrambled.map((p) => p.currentIndex).sort((a, b) => a - b);
++    expect(currentIndices).toEqual(originalIds);
++  });
++
++  it('does not mutate the input array passed in', () => {
++    const original = buildSolvedBoard();
++    const originalSnapshot = original.map((p) => ({ ...p }));
++    scramblePieces(original, false);
++    expect(original).toEqual(originalSnapshot);
++  });
++
++  it('leaves rotation at 0 for every piece when rotationMode is false', () => {
++    const scrambled = scramblePieces(buildSolvedBoard(), false);
++    expect(scrambled.every((p) => p.rotation === 0)).toBe(true);
++  });
++
++  it('assigns each piece a rotation from the valid set when rotationMode is true', () => {
++    const scrambled = scramblePieces(buildSolvedBoard(), true);
++    expect(scrambled.every((p) => [0, 90, 180, 270].includes(p.rotation))).toBe(true);
++  });
++
++  it('terminates for the smallest realistic board (2 pieces)', () => {
++    // Sanity check that the retry-until-unsolved loop terminates quickly
++    // for small boards, where the odds of drawing a solved shuffle are high.
++    const scrambled = scramblePieces(buildSolvedBoard(2), false);
++    expect(scrambled).toHaveLength(2);
++    expect(checkIsSolved(scrambled)).toBe(false);
++  });
++});
++
++describe('DIFFICULTY_SETTINGS', () => {
++  it('defines an increasing grid size across easy, medium, and hard', () => {
++    expect(DIFFICULTY_SETTINGS.easy.grid).toBeLessThan(DIFFICULTY_SETTINGS.medium.grid);
++    expect(DIFFICULTY_SETTINGS.medium.grid).toBeLessThan(DIFFICULTY_SETTINGS.hard.grid);
++  });
++
++  it('only locks the hard difficulty behind a polaroid threshold', () => {
++    expect(DIFFICULTY_SETTINGS.easy.threshold).toBe(0);
++    expect(DIFFICULTY_SETTINGS.medium.threshold).toBe(0);
++    expect(DIFFICULTY_SETTINGS.hard.threshold).toBeGreaterThan(0);
++  });
++});
+diff --git a/src/utils/puzzleHelper.ts b/src/utils/puzzleHelper.ts
+index 4b19844..7325837 100644
+--- a/src/utils/puzzleHelper.ts
++++ b/src/utils/puzzleHelper.ts
+@@ -94,7 +94,10 @@ export async function createPuzzlePieces(
+  * Ensures that the scrambled state is NOT already solved.
+  */
+ export function scramblePieces(pieces: PuzzlePiece[], rotationMode: boolean): PuzzlePiece[] {
+-  const scrambled = [...pieces];
++  // Clone each piece object too, not just the array — a shallow `[...pieces]`
++  // copy still shares the underlying piece references, so mutating
++  // `currentIndex`/`rotation` below would silently corrupt the caller's data.
++  const scrambled = pieces.map((piece) => ({ ...piece }));
+   let isSolved = true;
+ 
+   while (isSolved) {
+diff --git a/src/utils/soundHelper.ts b/src/utils/soundHelper.ts
+index 734ceec..b113f8d 100644
+--- a/src/utils/soundHelper.ts
++++ b/src/utils/soundHelper.ts
+@@ -1,14 +1,24 @@
+ // Web Audio API Synthesizer for SnapJigsaw Sound Effects
+ // This ensures offline capability and requires no external asset downloads.
+ 
++// Older Safari/iOS only exposes AudioContext under the vendor-prefixed name.
++interface WindowWithWebkitAudio extends Window {
++  webkitAudioContext?: typeof AudioContext;
++}
++
+ let audioCtx: AudioContext | null = null;
+ 
+ function getAudioContext(): AudioContext {
+   if (!audioCtx) {
+-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
++    const AudioContextClass =
++      window.AudioContext || (window as WindowWithWebkitAudio).webkitAudioContext;
++    if (!AudioContextClass) {
++      throw new Error('Web Audio API is not supported in this browser.');
++    }
++    audioCtx = new AudioContextClass();
+   }
+   if (audioCtx.state === 'suspended') {
+-    audioCtx.resume();
++    void audioCtx.resume();
+   }
+   return audioCtx;
+ }
+diff --git a/supabase/schema.sql b/supabase/schema.sql
+new file mode 100644
+index 0000000..338e7ec
+--- /dev/null
++++ b/supabase/schema.sql
+@@ -0,0 +1,80 @@
++-- SnapJigsaw Supabase schema
++-- Run this once in your Supabase project's SQL editor (Dashboard > SQL Editor > New query).
++
++-- ---------------------------------------------------------------------------
++-- 1. Table: polaroids
++-- ---------------------------------------------------------------------------
++create table if not exists public.polaroids (
++  id uuid primary key default gen_random_uuid(),
++  user_id uuid not null references auth.users (id) on delete cascade,
++  image_path text not null,        -- path within the 'polaroids' storage bucket
++  caption text not null default '',
++  frame_style text not null default 'classic',
++  taken_at text not null,          -- display date string, matches the app's existing format
++  share_slug text unique,          -- null = not shared; set = publicly viewable via this slug
++  created_at timestamptz not null default now()
++);
++
++create index if not exists polaroids_user_id_idx on public.polaroids (user_id);
++create index if not exists polaroids_share_slug_idx on public.polaroids (share_slug);
++
++alter table public.polaroids enable row level security;
++
++-- Owners can fully manage their own rows.
++create policy "Users can view their own polaroids"
++  on public.polaroids for select
++  using (auth.uid() = user_id);
++
++create policy "Users can insert their own polaroids"
++  on public.polaroids for insert
++  with check (auth.uid() = user_id);
++
++create policy "Users can update their own polaroids"
++  on public.polaroids for update
++  using (auth.uid() = user_id);
++
++create policy "Users can delete their own polaroids"
++  on public.polaroids for delete
++  using (auth.uid() = user_id);
++
++-- Anyone (including logged-out visitors) can read a row IF it has been
++-- explicitly shared, and ONLY that row — this is what powers public share links
++-- without exposing the rest of a user's wall.
++create policy "Anyone can view a polaroid that has been shared"
++  on public.polaroids for select
++  using (share_slug is not null);
++
++-- ---------------------------------------------------------------------------
++-- 2. Storage bucket: polaroids
++-- ---------------------------------------------------------------------------
++-- Public bucket: images are only ever meaningful when linked from a row's
++-- image_path, and the row itself is what's access-controlled above. Path
++-- convention: {user_id}/{polaroid_id}.jpg
++insert into storage.buckets (id, name, public)
++values ('polaroids', 'polaroids', true)
++on conflict (id) do nothing;
++
++create policy "Users can upload to their own folder"
++  on storage.objects for insert
++  with check (
++    bucket_id = 'polaroids'
++    and (storage.foldername(name))[1] = auth.uid()::text
++  );
++
++create policy "Users can update their own files"
++  on storage.objects for update
++  using (
++    bucket_id = 'polaroids'
++    and (storage.foldername(name))[1] = auth.uid()::text
++  );
++
++create policy "Users can delete their own files"
++  on storage.objects for delete
++  using (
++    bucket_id = 'polaroids'
++    and (storage.foldername(name))[1] = auth.uid()::text
++  );
++
++create policy "Anyone can view polaroid images"
++  on storage.objects for select
++  using (bucket_id = 'polaroids');
+diff --git a/vercel.json b/vercel.json
+new file mode 100644
+index 0000000..0d199b2
+--- /dev/null
++++ b/vercel.json
+@@ -0,0 +1,5 @@
++{
++  "rewrites": [
++    { "source": "/(.*)", "destination": "/index.html" }
++  ]
++}
+diff --git a/vite.config.ts b/vite.config.ts
+index 8b0f57b..65f372b 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,7 +1,11 @@
+-import { defineConfig } from 'vite'
++import { defineConfig } from 'vitest/config'
+ import react from '@vitejs/plugin-react'
+ 
+ // https://vite.dev/config/
+ export default defineConfig({
+   plugins: [react()],
++  test: {
++    environment: 'jsdom',
++    globals: true,
++  },
+ })
