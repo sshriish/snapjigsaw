@@ -46,23 +46,31 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
 
   // 1. Run AI Enhancement Pass
   useEffect(() => {
+    let active = true;
+
     async function runEnhancement() {
       setIsEnhancing(true);
       try {
         const result = await enhanceImage(photoDataUrl);
+        if (!active) return;
         setEnhancedPhoto(result);
         setIsEnhancing(false);
-        
+
         // 2. Start developing chemical reveal animation
         setIsDeveloping(true);
       } catch (err) {
         console.error('Enhancement pipeline failed, falling back:', err);
+        if (!active) return;
         setEnhancedPhoto(photoDataUrl);
         setIsEnhancing(false);
         setIsDeveloping(true);
       }
     }
-    runEnhancement();
+    void runEnhancement();
+
+    return () => {
+      active = false;
+    };
   }, [photoDataUrl]);
 
   // Handle chemical reveal fade duration

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Camera, RotateCw, RefreshCw, Check, ArrowRight } from 'lucide-react';
 import { playBeep, playShutter } from '../utils/soundHelper';
 
@@ -19,24 +19,28 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
 
   // Check for multiple video inputs (cameras)
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      const videoDevices = devices.filter((device) => device.kind === 'videoinput');
-      setHasMultipleCameras(videoDevices.length > 1);
-    });
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((devices) => {
+        const videoDevices = devices.filter((device) => device.kind === 'videoinput');
+        setHasMultipleCameras(videoDevices.length > 1);
+      })
+      .catch((err) => {
+        console.warn('Unable to enumerate camera devices:', err);
+      });
   }, []);
 
-  // Initialize and clean up camera stream
-  useEffect(() => {
-    if (capturedPhoto) return; // don't start stream if we already have a captured photo
-    
-    startCamera();
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
 
-    return () => {
-      stopCamera();
-    };
-  }, [facingMode, capturedPhoto]);
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     setPermissionState('loading');
     stopCamera();
 
@@ -45,7 +49,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
         facingMode: facingMode,
         width: { ideal: 1024 },
         height: { ideal: 768 },
-        aspectRatio: { ideal: 4/3 }
+        aspectRatio: { ideal: 4 / 3 }
       },
       audio: false
     };
@@ -61,17 +65,18 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
       console.error('Camera permission denied or error:', err);
       setPermissionState('denied');
     }
-  };
+  }, [facingMode, stopCamera]);
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
+  // Initialize and clean up camera stream
+  useEffect(() => {
+    if (capturedPhoto) return; // don't start stream if we already have a captured photo
+
+    void startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, [facingMode, capturedPhoto, startCamera, stopCamera]);
 
   const switchCamera = () => {
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
@@ -82,25 +87,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
     setCountdown(4);
   };
 
-  // Countdown timer loop
-  useEffect(() => {
-    if (countdown === null) return;
-
-    if (countdown > 0) {
-      // Play a beep sound on each tick
-      playBeep();
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      // Countdown finished -> Capture Photo
-      capturePhoto();
-      setCountdown(null);
-    }
-  }, [countdown]);
-
-  const capturePhoto = () => {
+  const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
@@ -125,14 +112,32 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
 
     // Save as JPEG
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    
+
     // Stop camera feed after shutter sound plays
     setTimeout(() => {
       setFlashActive(false);
       setCapturedPhoto(dataUrl);
       stopCamera();
     }, 250);
-  };
+  }, [facingMode, stopCamera]);
+
+  // Countdown timer loop
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown > 0) {
+      // Play a beep sound on each tick
+      playBeep();
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished -> Capture Photo
+      capturePhoto();
+      setCountdown(null);
+    }
+  }, [countdown, capturePhoto]);
 
   const handleRetake = () => {
     setCapturedPhoto(null);

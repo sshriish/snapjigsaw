@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Camera, Image as ImageIcon, Sparkles, Trophy, ShieldCheck } from 'lucide-react';
+import { Camera, Image as ImageIcon, Sparkles, Trophy, ShieldCheck, Cloud, CloudOff, LogOut } from 'lucide-react';
 import { CameraCapture } from './components/CameraCapture';
 import { FilterSelector } from './components/FilterSelector';
 import { JigsawPuzzle } from './components/JigsawPuzzle';
 import { PolaroidReveal } from './components/PolaroidReveal';
 import { PolaroidWall } from './components/PolaroidWall';
+import { LoginScreen } from './components/LoginScreen';
+import { useAuth } from './hooks/useAuth';
+import { isSupabaseConfigured } from './lib/supabaseClient';
+import { fetchPolaroids, uploadPolaroid, deletePolaroid as deleteRemotePolaroid } from './lib/polaroidSync';
 import type { FilterType } from './utils/imageFilters';
 import './App.css';
 
-type Screen = 'LANDING' | 'CAPTURE' | 'FILTER' | 'PUZZLE' | 'REVEAL' | 'WALL';
+type Screen = 'LANDING' | 'CAPTURE' | 'FILTER' | 'PUZZLE' | 'REVEAL' | 'WALL' | 'LOGIN';
 
 interface Polaroid {
   id: string;
@@ -16,9 +20,14 @@ interface Polaroid {
   caption: string;
   date: string;
   frameStyle: string;
+  /** Present only for polaroids synced to Supabase. */
+  imagePath?: string;
+  shareSlug?: string | null;
 }
 
 function App() {
+  const { session, isLoading: authLoading, signOut } = useAuth();
+
   // Screen and Flow States
   const [screen, setScreen] = useState<Screen>('LANDING');
   const [rawPhoto, setRawPhoto] = useState<string | null>(null);
@@ -32,26 +41,81 @@ function App() {
   const [streakCount, setStreakCount] = useState<number>(0);
   const [hasDiscardedInStreak, setHasDiscardedInStreak] = useState<boolean>(false);
   const [polaroids, setPolaroids] = useState<Polaroid[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Load polaroids from localStorage on mount
+  // Load the streak from localStorage (always local — it's per-device progress, not a memory to sync)
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('snapjigsaw_polaroids');
-      if (stored) {
-        setPolaroids(JSON.parse(stored));
-      }
-      
       const storedStreak = localStorage.getItem('snapjigsaw_streak');
       if (storedStreak) {
         setStreakCount(parseInt(storedStreak, 10));
       }
     } catch (err) {
-      console.error('Failed to load saved state from localStorage:', err);
+      console.error('Failed to load saved streak from localStorage:', err);
     }
   }, []);
 
+  // Load polaroids: from Supabase when signed in (migrating any local-only
+  // ones up on first sync), otherwise from localStorage as before.
+  useEffect(() => {
+    if (authLoading) return;
+
+    let active = true;
+
+    async function loadPolaroids() {
+      if (session && isSupabaseConfigured) {
+        setIsSyncing(true);
+        try {
+          const migratedFlag = `snapjigsaw_migrated_${session.user.id}`;
+          const localRaw = localStorage.getItem('snapjigsaw_polaroids');
+          const localPolaroids: Polaroid[] = localRaw ? JSON.parse(localRaw) : [];
+
+          if (localPolaroids.length > 0 && !localStorage.getItem(migratedFlag)) {
+            // One-time push of pre-existing local polaroids up to this account.
+            for (const p of localPolaroids) {
+              try {
+                await uploadPolaroid(session.user.id, {
+                  dataUrl: p.imageUrl,
+                  caption: p.caption,
+                  date: p.date,
+                  frameStyle: p.frameStyle,
+                });
+              } catch (err) {
+                console.error('Failed to migrate a local polaroid to the cloud:', err);
+              }
+            }
+            localStorage.setItem(migratedFlag, 'true');
+          }
+
+          const remote = await fetchPolaroids(session.user.id);
+          if (active) {
+            setPolaroids(remote);
+          }
+        } catch (err) {
+          console.error('Failed to load polaroids from Supabase:', err);
+        } finally {
+          if (active) setIsSyncing(false);
+        }
+      } else {
+        try {
+          const stored = localStorage.getItem('snapjigsaw_polaroids');
+          if (active && stored) {
+            setPolaroids(JSON.parse(stored));
+          }
+        } catch (err) {
+          console.error('Failed to load saved polaroids from localStorage:', err);
+        }
+      }
+    }
+
+    void loadPolaroids();
+    return () => {
+      active = false;
+    };
+  }, [session, authLoading]);
+
   // Save state helpers
-  const savePolaroids = (updated: Polaroid[]) => {
+  const saveLocalPolaroids = (updated: Polaroid[]) => {
     setPolaroids(updated);
     localStorage.setItem('snapjigsaw_polaroids', JSON.stringify(updated));
   };
@@ -94,26 +158,48 @@ function App() {
     setScreen('CAPTURE');
   };
 
-  const handlePolaroidSaved = (newPolaroid: Polaroid) => {
-    // Save to Polaroid Wall gallery database
-    const updated = [newPolaroid, ...polaroids];
-    savePolaroids(updated);
+  const handlePolaroidSaved = async (newPolaroid: Polaroid) => {
+    if (session && isSupabaseConfigured) {
+      try {
+        const synced = await uploadPolaroid(session.user.id, {
+          dataUrl: newPolaroid.imageUrl,
+          caption: newPolaroid.caption,
+          date: newPolaroid.date,
+          frameStyle: newPolaroid.frameStyle,
+        });
+        setPolaroids((prev) => [synced, ...prev]);
+      } catch (err) {
+        console.error('Failed to sync new polaroid, saving locally instead:', err);
+        saveLocalPolaroids([newPolaroid, ...polaroids]);
+      }
+    } else {
+      saveLocalPolaroids([newPolaroid, ...polaroids]);
+    }
 
     // Reset streak and discard tracking after successful Polaroid Generation
     updateStreak(0);
     setHasDiscardedInStreak(false);
-    
+
     // Clear temp photos
     setRawPhoto(null);
     setFilteredPhoto(null);
-    
+
     // Return to the Polaroid Scrapbook Wall!
     setScreen('WALL');
   };
 
-  const handleDeletePolaroid = (id: string) => {
-    const updated = polaroids.filter((p) => p.id !== id);
-    savePolaroids(updated);
+  const handleDeletePolaroid = async (id: string) => {
+    if (session && isSupabaseConfigured) {
+      const target = polaroids.find((p) => p.id === id);
+      try {
+        await deleteRemotePolaroid(id, target?.imagePath);
+        setPolaroids((prev) => prev.filter((p) => p.id !== id));
+      } catch (err) {
+        console.error('Failed to delete synced polaroid:', err);
+      }
+    } else {
+      saveLocalPolaroids(polaroids.filter((p) => p.id !== id));
+    }
   };
 
   const handleStartCapture = () => {
@@ -147,11 +233,28 @@ function App() {
               <Trophy size={16} className="app-logo" /> Streak: {streakCount}/3
             </div>
           )}
+          {isSupabaseConfigured && (
+            session ? (
+              <button
+                className="btn-secondary"
+                onClick={signOut}
+                title={`Signed in as ${session.user.email}`}
+              >
+                <Cloud size={16} /> {isSyncing ? 'Syncing...' : 'Synced'} <LogOut size={14} />
+              </button>
+            ) : (
+              <button className="btn-secondary" onClick={() => setScreen('LOGIN')}>
+                <CloudOff size={16} /> Sync Wall
+              </button>
+            )
+          )}
         </div>
       </header>
 
       {/* Main Container Area */}
       <main className="app-main">
+        {screen === 'LOGIN' && <LoginScreen onBack={() => setScreen('LANDING')} />}
+
         {screen === 'LANDING' && (
           <div className="glass-panel landing-card">
             <div className="privacy-badge">
@@ -257,6 +360,7 @@ function App() {
             polaroids={polaroids}
             onDelete={handleDeletePolaroid}
             onBack={() => setScreen('LANDING')}
+            canShareLink={Boolean(session) && isSupabaseConfigured}
           />
         )}
       </main>

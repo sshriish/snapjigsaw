@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Trash2, Download, Share2, X, ArrowLeft } from 'lucide-react';
+import { Camera, Image as ImageIcon, Trash2, Download, Share2, Link2, Check, X, ArrowLeft } from 'lucide-react';
+import { getOrCreateShareLink } from '../lib/polaroidSync';
 
 interface Polaroid {
   id: string;
@@ -7,16 +8,22 @@ interface Polaroid {
   caption: string;
   date: string;
   frameStyle: string;
+  imagePath?: string;
+  shareSlug?: string | null;
 }
 
 interface PolaroidWallProps {
   polaroids: Polaroid[];
   onDelete: (id: string) => void;
   onBack: () => void;
+  /** Whether the user is signed in and synced, so a persistent share link can be generated. */
+  canShareLink?: boolean;
 }
 
-export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack }) => {
+export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack, canShareLink = false }) => {
   const [activeLightbox, setActiveLightbox] = useState<Polaroid | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   // Generate a random rotation/tilt angle for each polaroid on the scrapbook wall
   // We seed this based on the ID string to keep the tilt angle consistent across updates.
@@ -168,6 +175,21 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
     }
   };
 
+  const handleCopyShareLink = async (polaroid: Polaroid) => {
+    setIsGeneratingLink(true);
+    try {
+      const url = await getOrCreateShareLink(polaroid.id, polaroid.shareSlug ?? null);
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to create share link:', err);
+      alert('Could not create a share link right now. Please try again.');
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
   const handleDeleteWithConfirmation = (id: string) => {
     if (window.confirm('Are you sure you want to permanently delete this polaroid memory?')) {
       onDelete(id);
@@ -254,6 +276,17 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
               <button className="btn-secondary" onClick={() => handleShare(activeLightbox)}>
                 <Share2 size={16} /> Share
               </button>
+              {canShareLink && (
+                <button
+                  className="btn-secondary"
+                  onClick={() => handleCopyShareLink(activeLightbox)}
+                  disabled={isGeneratingLink}
+                  title="Copy a public link anyone can open"
+                >
+                  {linkCopied ? <Check size={16} /> : <Link2 size={16} />}
+                  {linkCopied ? 'Link Copied!' : 'Copy Link'}
+                </button>
+              )}
               <button className="btn-danger" onClick={() => handleDeleteWithConfirmation(activeLightbox.id)}>
                 <Trash2 size={16} /> Delete Memory
               </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, RotateCw, Trash2, ArrowRight, Award, Trophy, Timer } from 'lucide-react';
+import { Eye, EyeOff, RotateCw, Trash2, ArrowRight, Award, Trophy, Timer, Undo2, AlertTriangle } from 'lucide-react';
 import { createPuzzlePieces, scramblePieces, checkIsSolved } from '../utils/puzzleHelper';
 import type { PuzzlePiece } from '../utils/puzzleHelper';
 import { playSnap } from '../utils/soundHelper';
@@ -27,15 +27,22 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
   const gridSize = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 4 : 5;
   
   const [pieces, setPieces] = useState<PuzzlePiece[]>([]);
+  const [history, setHistory] = useState<PuzzlePiece[][]>([]);
   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showGhost, setShowGhost] = useState(true);
   const [ghostOpacity, setGhostOpacity] = useState(0.35);
   const [isWin, setIsWin] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const timerRef = useRef<number | null>(null);
   const ghostTimeoutRef = useRef<number | null>(null);
+  // Indexed by grid slot (currentIndex), so arrow-key navigation can jump
+  // straight to the DOM node occupying an adjacent slot.
+  const slotRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const MAX_HISTORY = 20;
 
   // Initialize and slice puzzle
   useEffect(() => {
@@ -43,6 +50,8 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
       const initialPieces = await createPuzzlePieces(photoDataUrl, gridSize, rotationMode);
       const scrambled = scramblePieces(initialPieces, rotationMode);
       setPieces(scrambled);
+      setHistory([]);
+      setSelectedPieceId(null);
       setHasStarted(true);
       setIsWin(false);
       setElapsedTime(0);
@@ -51,7 +60,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
       setGhostOpacity(0.35);
       triggerGhostFade();
     }
-    initPuzzle();
+    void initPuzzle();
 
     return () => {
       stopTimer();
@@ -139,6 +148,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
 
   // Perform rotation
   const rotatePiece = (pieceId: number) => {
+    setHistory((prev) => [...prev.slice(-(MAX_HISTORY - 1)), pieces]);
     setPieces((prevPieces) => {
       const updated = prevPieces.map((piece) => {
         if (piece.id === pieceId) {
@@ -161,6 +171,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
 
   // Perform swap
   const swapPieces = (idA: number, idB: number) => {
+    setHistory((prev) => [...prev.slice(-(MAX_HISTORY - 1)), pieces]);
     setPieces((prevPieces) => {
       const pieceA = prevPieces.find((p) => p.id === idA);
       const pieceB = prevPieces.find((p) => p.id === idB);
@@ -201,13 +212,36 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
     }
   };
 
+  const undoLastMove = () => {
+    if (history.length === 0 || isWin) return;
+    const previous = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1));
+    setPieces(previous);
+    setSelectedPieceId(null);
+  };
+
+  const lockedCount = pieces.filter(
+    (p) => p.currentIndex === p.id && p.rotation === 0
+  ).length;
+  const totalPieces = gridSize * gridSize;
+
+  const requestDiscard = () => {
+    // A near-complete puzzle is easy to lose with a stray tap — confirm first.
+    setShowDiscardConfirm(true);
+  };
+
+  const confirmDiscard = () => {
+    setShowDiscardConfirm(false);
+    onDiscard();
+  };
+
   const checkSolvedState = (currentPieces: PuzzlePiece[]) => {
     if (checkIsSolved(currentPieces)) {
       setIsWin(true);
       stopTimer();
       
       // Fire confetti celebration
-      confetti({
+      void confetti({
         particleCount: 150,
         spread: 80,
         origin: { y: 0.6 }
@@ -252,6 +286,42 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
     rotatePiece(pieceId);
   };
 
+  // Keyboard support: arrow keys move focus across the grid, Enter/Space
+  // selects or swaps the focused piece, and "r" rotates the currently
+  // selected piece when rotation mode is active.
+  const handlePieceKeyDown = (e: React.KeyboardEvent, piece: PuzzlePiece) => {
+    const { key } = e;
+    const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
+    if (arrowKeys.includes(key)) {
+      e.preventDefault();
+      const row = Math.floor(piece.currentIndex / gridSize);
+      const col = piece.currentIndex % gridSize;
+      let targetRow = row;
+      let targetCol = col;
+
+      if (key === 'ArrowUp') targetRow = Math.max(0, row - 1);
+      if (key === 'ArrowDown') targetRow = Math.min(gridSize - 1, row + 1);
+      if (key === 'ArrowLeft') targetCol = Math.max(0, col - 1);
+      if (key === 'ArrowRight') targetCol = Math.min(gridSize - 1, col + 1);
+
+      const targetIndex = targetRow * gridSize + targetCol;
+      slotRefs.current[targetIndex]?.focus();
+      return;
+    }
+
+    if (key === 'Enter' || key === ' ') {
+      e.preventDefault();
+      handlePieceInteraction(piece.id);
+      return;
+    }
+
+    if ((key === 'r' || key === 'R') && rotationMode && selectedPieceId === piece.id) {
+      e.preventDefault();
+      rotatePiece(piece.id);
+    }
+  };
+
   // Map out scrambled slots array to render grid in actual UI order
   const sortedPiecesToRender = [...pieces].sort((a, b) => a.currentIndex - b.currentIndex);
 
@@ -273,12 +343,33 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
         </div>
         <div className="status-controls">
           <button
+            className="control-btn"
+            onClick={undoLastMove}
+            disabled={history.length === 0 || isWin}
+            title="Undo Last Move"
+          >
+            <Undo2 size={18} />
+          </button>
+          <button
             className={`control-btn ${showGhost ? 'active' : ''}`}
             onClick={toggleGhost}
             title="Toggle Ghost Preview"
           >
             {showGhost ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
+        </div>
+      </div>
+
+      {/* Progress Indicator */}
+      <div className="puzzle-progress" aria-live="polite">
+        <span className="puzzle-progress-label">
+          {isWin ? 'Solved!' : `${lockedCount} / ${totalPieces} pieces placed`}
+        </span>
+        <div className="progress-bar-track">
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${totalPieces === 0 ? 0 : (lockedCount / totalPieces) * 100}%` }}
+          />
         </div>
       </div>
 
@@ -318,9 +409,21 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
                   onDrop={(e) => handleDrop(e, piece.id)}
                 >
                   <div
+                    ref={(el) => {
+                      slotRefs.current[piece.currentIndex] = el;
+                    }}
                     draggable={!isLocked}
                     onDragStart={(e) => handleDragStart(e, piece.id)}
                     onClick={() => handlePieceInteraction(piece.id)}
+                    onKeyDown={(e) => handlePieceKeyDown(e, piece)}
+                    role="button"
+                    tabIndex={isLocked ? -1 : 0}
+                    aria-label={
+                      isLocked
+                        ? `Piece ${piece.id + 1}, correctly placed`
+                        : `Piece ${piece.id + 1}${isSelected ? ', selected' : ''}`
+                    }
+                    aria-pressed={isSelected}
                     className={`puzzle-piece ${isSelected ? 'selected' : ''} ${isLocked ? 'correct-locked' : ''}`}
                     style={{
                       backgroundImage: `url(${piece.dataUrl})`,
@@ -363,7 +466,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
 
       {/* Action Footer */}
       <div className="puzzle-footer">
-        <button className="btn-danger" onClick={onDiscard}>
+        <button className="btn-danger" onClick={requestDiscard}>
           <Trash2 size={16} /> Discard & Start Over
         </button>
 
@@ -378,10 +481,33 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
       <div className="camera-instructions" style={{ justifyContent: 'center' }}>
         <span className="app-subtitle" style={{ textAlign: 'center' }}>
           {rotationMode
-            ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate"
-            : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap"}
+            ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate | Keyboard: Arrows to move, Enter to select/swap, R to rotate"
+            : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap | Keyboard: Arrows to move, Enter to select/swap"}
         </span>
       </div>
+
+      {/* Discard Confirmation Modal */}
+      {showDiscardConfirm && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="discard-modal-title">
+          <div className="glass-panel modal-card">
+            <AlertTriangle size={28} className="modal-icon" />
+            <h3 id="discard-modal-title" className="modal-title">Discard this puzzle?</h3>
+            <p className="modal-desc">
+              {lockedCount > 0
+                ? `You've placed ${lockedCount} of ${totalPieces} pieces correctly. Discarding restarts with a new photo — your streak is safe, but this progress will be lost.`
+                : "This restarts with a new photo. Your streak is safe either way."}
+            </p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowDiscardConfirm(false)}>
+                Keep Solving
+              </button>
+              <button className="btn-danger" onClick={confirmDiscard}>
+                <Trash2 size={16} /> Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FILTER_OPTIONS, applyFilter } from '../utils/imageFilters';
 import type { FilterType } from '../utils/imageFilters';
 import { Sparkles, ArrowRight } from 'lucide-react';
@@ -16,42 +16,58 @@ export const FilterSelector: React.FC<FilterSelectorProps> = ({
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
   const [previewImage, setPreviewImage] = useState<string>(photoDataUrl);
-  const [thumbnails, setThumbnails] = useState<Record<FilterType, string>>({} as any);
+  const [thumbnails, setThumbnails] = useState<Record<FilterType, string>>(
+    {} as Record<FilterType, string>
+  );
   const [isLoading, setIsLoading] = useState(true);
+
+  // Loads a data URL into an <img>, rejecting on decode failure instead of hanging forever.
+  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Failed to load image for filtering.'));
+      img.src = src;
+    });
+  }, []);
 
   // Generate thumbnail sizes of the photo for preview tiles
   useEffect(() => {
+    let active = true;
+
     async function generateThumbnails() {
       setIsLoading(true);
       try {
         const thumbCanvas = document.createElement('canvas');
         const thumbCtx = thumbCanvas.getContext('2d');
-        const img = new Image();
-        img.src = photoDataUrl;
-
-        await new Promise((resolve) => {
-          img.onload = resolve;
-        });
+        const img = await loadImage(photoDataUrl);
 
         // Small dimensions for thumbnail computation to keep it fast
         thumbCanvas.width = 120;
         thumbCanvas.height = 90;
         thumbCtx?.drawImage(img, 0, 0, 120, 90);
 
-        const newThumbs: Record<FilterType, string> = {} as any;
+        const newThumbs = {} as Record<FilterType, string>;
         for (const option of FILTER_OPTIONS) {
           newThumbs[option.id] = await applyFilter(thumbCanvas, option.id);
         }
-        setThumbnails(newThumbs);
+        if (active) {
+          setThumbnails(newThumbs);
+        }
       } catch (err) {
         console.error('Failed to generate filter thumbnails:', err);
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }
 
-    generateThumbnails();
-  }, [photoDataUrl]);
+    void generateThumbnails();
+    return () => {
+      active = false;
+    };
+  }, [photoDataUrl, loadImage]);
 
   // Apply filter to the main preview image when selection changes
   useEffect(() => {
@@ -62,11 +78,7 @@ export const FilterSelector: React.FC<FilterSelectorProps> = ({
         return;
       }
       try {
-        const img = new Image();
-        img.src = photoDataUrl;
-        await new Promise((resolve) => {
-          img.onload = resolve;
-        });
+        const img = await loadImage(photoDataUrl);
         const result = await applyFilter(img, selectedFilter);
         if (active) {
           setPreviewImage(result);
@@ -75,21 +87,21 @@ export const FilterSelector: React.FC<FilterSelectorProps> = ({
         console.error('Error updating main preview filter:', err);
       }
     }
-    updateMainPreview();
+    void updateMainPreview();
     return () => {
       active = false;
     };
-  }, [selectedFilter, photoDataUrl]);
+  }, [selectedFilter, photoDataUrl, loadImage]);
 
   const handleConfirm = async () => {
-    // Generate full-resolution filtered image
-    const img = new Image();
-    img.src = photoDataUrl;
-    await new Promise((resolve) => {
-      img.onload = resolve;
-    });
-    const finalDataUrl = await applyFilter(img, selectedFilter);
-    onFilterSelected(finalDataUrl, selectedFilter);
+    try {
+      // Generate full-resolution filtered image
+      const img = await loadImage(photoDataUrl);
+      const finalDataUrl = await applyFilter(img, selectedFilter);
+      onFilterSelected(finalDataUrl, selectedFilter);
+    } catch (err) {
+      console.error('Failed to apply filter on confirm:', err);
+    }
   };
 
   return (

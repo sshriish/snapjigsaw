@@ -1,14 +1,24 @@
 // Web Audio API Synthesizer for SnapJigsaw Sound Effects
 // This ensures offline capability and requires no external asset downloads.
 
+// Older Safari/iOS only exposes AudioContext under the vendor-prefixed name.
+interface WindowWithWebkitAudio extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass =
+      window.AudioContext || (window as WindowWithWebkitAudio).webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error('Web Audio API is not supported in this browser.');
+    }
+    audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    void audioCtx.resume();
   }
   return audioCtx;
 }
