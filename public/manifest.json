@@ -1,0 +1,29 @@
+{
+  "short_name": "SnapJigsaw",
+  "name": "SnapJigsaw Photo Puzzle App",
+  "description": "Capture selfies, apply retro filters, and solve jigsaw puzzles to earn polaroids.",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0c0b10",
+  "theme_color": "#a855f7",
+  "display": "standalone",
+  "orientation": "portrait"
+}

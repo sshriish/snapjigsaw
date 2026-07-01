@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <filter id="neonShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#a855f7" flood-opacity="0.5" />
+    </filter>
+  </defs>
+  <!-- Background glass plate -->
+  <rect width="512" height="512" rx="128" fill="#0d0c15" />
+  
+  <!-- Outer camera shape -->
+  <rect x="96" y="160" width="320" height="240" rx="32" fill="none" stroke="url(#glowGrad)" stroke-width="24" filter="url(#neonShadow)" />
+  
+  <!-- Flash light -->
+  <circle cx="350" cy="220" r="20" fill="#06b6d4" />
+  
+  <!-- Camera lens puzzle hybrid -->
+  <circle cx="256" cy="280" r="80" fill="none" stroke="url(#glowGrad)" stroke-width="24" />
+  
+  <!-- Jigsaw puzzle peg protruding from lens -->
+  <circle cx="256" cy="200" r="24" fill="#0d0c15" stroke="url(#glowGrad)" stroke-width="24" />
+  
+  <!-- Top camera dial -->
+  <rect x="160" y="128" width="80" height="32" rx="8" fill="url(#glowGrad)" />
+</svg>
