@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Trash2, Download, Share2, Link2, Check, X, ArrowLeft } from 'lucide-react';
-import { getOrCreateShareLink } from '../lib/polaroidSync';
+import { Camera, Image as ImageIcon, Trash2, Download, Share2, ArrowLeft } from 'lucide-react';
 
 interface Polaroid {
   id: string;
@@ -8,40 +7,31 @@ interface Polaroid {
   caption: string;
   date: string;
   frameStyle: string;
-  imagePath?: string;
-  shareSlug?: string | null;
 }
 
 interface PolaroidWallProps {
   polaroids: Polaroid[];
   onDelete: (id: string) => void;
   onBack: () => void;
-  /** Whether the user is signed in and synced, so a persistent share link can be generated. */
-  canShareLink?: boolean;
 }
 
-export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack, canShareLink = false }) => {
+export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack }) => {
   const [activeLightbox, setActiveLightbox] = useState<Polaroid | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   // Generate a random rotation/tilt angle for each polaroid on the scrapbook wall
-  // We seed this based on the ID string to keep the tilt angle consistent across updates.
   const getTiltAngle = (id: string): number => {
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
       hash = id.charCodeAt(i) + ((hash << 5) - hash);
     }
-    // Return a tilt between -6 and +6 degrees
     return (hash % 12) - 6;
   };
 
-  const handleDownload = async (polaroid: Polaroid) => {
+  const buildCanvas = async (polaroid: Polaroid): Promise<HTMLCanvasElement> => {
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 800;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const ctx = canvas.getContext('2d')!;
 
     const img = new Image();
     img.src = polaroid.imageUrl;
@@ -49,7 +39,6 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
       img.onload = resolve;
     });
 
-    // Draw frame styling
     if (polaroid.frameStyle === 'neon') {
       ctx.fillStyle = '#111111';
       ctx.fillRect(0, 0, 640, 800);
@@ -73,13 +62,11 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
       ctx.strokeRect(4, 4, 632, 792);
     }
 
-    // Draw Photo
     ctx.drawImage(img, 32, 32, 576, 576);
     ctx.strokeStyle = 'rgba(0,0,0,0.12)';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(32, 32, 576, 576);
 
-    // Draw Text
     ctx.textAlign = 'center';
     let textStyle = '#1a1a24';
     if (polaroid.frameStyle === 'neon' || polaroid.frameStyle === 'vintage-dark') {
@@ -96,7 +83,12 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
     ctx.fillStyle = polaroid.frameStyle === 'cyberpunk' ? '#ff007f' : textStyle;
     ctx.fillText(polaroid.date, 320, 730);
 
+    return canvas;
+  };
+
+  const handleDownload = async (polaroid: Polaroid) => {
     try {
+      const canvas = await buildCanvas(polaroid);
       const link = document.createElement('a');
       link.download = `${polaroid.caption.replace(/\s+/g, '-').toLowerCase()}-${polaroid.id}.jpg`;
       link.href = canvas.toDataURL('image/jpeg', 0.95);
@@ -107,59 +99,12 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
   };
 
   const handleShare = async (polaroid: Polaroid) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 800;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const img = new Image();
-    img.src = polaroid.imageUrl;
-    await new Promise((resolve) => {
-      img.onload = resolve;
-    });
-
-    if (polaroid.frameStyle === 'neon') {
-      ctx.fillStyle = '#111111';
-      ctx.fillRect(0, 0, 640, 800);
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 634, 794);
-    } else if (polaroid.frameStyle === 'vintage-dark') {
-      ctx.fillStyle = '#2a2522';
-      ctx.fillRect(0, 0, 640, 800);
-    } else if (polaroid.frameStyle === 'cyberpunk') {
-      ctx.fillStyle = '#0a0a14';
-      ctx.fillRect(0, 0, 640, 800);
-      ctx.strokeStyle = '#39ff14';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 634, 794);
-    } else {
-      ctx.fillStyle = '#fdfdfd';
-      ctx.fillRect(0, 0, 640, 800);
-    }
-
-    ctx.drawImage(img, 32, 32, 576, 576);
-
-    ctx.textAlign = 'center';
-    let textStyle = '#1a1a24';
-    if (polaroid.frameStyle === 'neon' || polaroid.frameStyle === 'vintage-dark') {
-      textStyle = '#ffffff';
-    } else if (polaroid.frameStyle === 'cyberpunk') {
-      textStyle = '#39ff14';
-    }
-    ctx.fillStyle = textStyle;
-    ctx.font = '36px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillText(polaroid.caption, 320, 670);
-
-    ctx.font = '22px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillStyle = polaroid.frameStyle === 'cyberpunk' ? '#ff007f' : textStyle;
-    ctx.fillText(polaroid.date, 320, 730);
-
     try {
+      const canvas = await buildCanvas(polaroid);
       canvas.toBlob(async (blob) => {
         if (!blob) return;
         const file = new File([blob], `${polaroid.id}.jpg`, { type: 'image/jpeg' });
+
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -167,26 +112,15 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
             text: 'Check out my SnapJigsaw polaroid memory!'
           });
         } else {
-          alert('Web Share is not supported on this browser. Use Download instead.');
+          // Laptop / unsupported fallback — just download it instead
+          const link = document.createElement('a');
+          link.download = `${polaroid.id}.jpg`;
+          link.href = canvas.toDataURL('image/jpeg', 0.95);
+          link.click();
         }
       }, 'image/jpeg', 0.95);
     } catch (err) {
       console.warn('Sharing failed:', err);
-    }
-  };
-
-  const handleCopyShareLink = async (polaroid: Polaroid) => {
-    setIsGeneratingLink(true);
-    try {
-      const url = await getOrCreateShareLink(polaroid.id, polaroid.shareSlug ?? null);
-      await navigator.clipboard.writeText(url);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to create share link:', err);
-      alert('Could not create a share link right now. Please try again.');
-    } finally {
-      setIsGeneratingLink(false);
     }
   };
 
@@ -251,7 +185,6 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
         </div>
       )}
 
-      {/* Lightbox / Detailed View Modal */}
       {activeLightbox && (
         <div className="lightbox-overlay" onClick={() => setActiveLightbox(null)}>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
@@ -276,22 +209,11 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
               <button className="btn-secondary" onClick={() => handleShare(activeLightbox)}>
                 <Share2 size={16} /> Share
               </button>
-              {canShareLink && (
-                <button
-                  className="btn-secondary"
-                  onClick={() => handleCopyShareLink(activeLightbox)}
-                  disabled={isGeneratingLink}
-                  title="Copy a public link anyone can open"
-                >
-                  {linkCopied ? <Check size={16} /> : <Link2 size={16} />}
-                  {linkCopied ? 'Link Copied!' : 'Copy Link'}
-                </button>
-              )}
               <button className="btn-danger" onClick={() => handleDeleteWithConfirmation(activeLightbox.id)}>
                 <Trash2 size={16} /> Delete Memory
               </button>
               <button className="btn-secondary" onClick={() => setActiveLightbox(null)} style={{ padding: '8px' }}>
-                <X size={20} />
+                ✕
               </button>
             </div>
           </div>
