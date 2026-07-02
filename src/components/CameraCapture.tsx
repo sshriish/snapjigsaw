@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Camera, RotateCw, RefreshCw, Check, ArrowRight } from 'lucide-react';
+import { Camera, RotateCw, RefreshCw, Check, ArrowRight, Palette } from 'lucide-react';
 import { playBeep, playShutter } from '../utils/soundHelper';
+import { FILTER_OPTIONS, CSS_FILTER_PREVIEWS, applyFilter } from '../utils/imageFilters';
+import type { FilterType } from '../utils/imageFilters';
 
 interface CameraCaptureProps {
   onCapture: (photoDataUrl: string) => void;
@@ -16,6 +18,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
   const [countdown, setCountdown] = useState<number | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [flashActive, setFlashActive] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
+  const [liveThumb, setLiveThumb] = useState<string | null>(null);
 
   // Check for multiple video inputs (cameras)
   useEffect(() => {
@@ -82,6 +86,40 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   };
 
+  // Grabs a cheap, cropped square snapshot of the live feed to power the
+  // filter-strip thumbnails, so each filter chip previews the actual scene.
+  const captureLiveThumb = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2 || !video.videoWidth) return;
+
+    const side = Math.min(video.videoWidth, video.videoHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+
+    const sx = (video.videoWidth - side) / 2;
+    const sy = (video.videoHeight - side) / 2;
+    ctx.drawImage(video, sx, sy, side, side, 0, 0, canvas.width, canvas.height);
+
+    setLiveThumb(canvas.toDataURL('image/jpeg', 0.7));
+  }, [facingMode]);
+
+  // Periodically refresh the filter-strip thumbnails while the viewfinder is live.
+  useEffect(() => {
+    if (capturedPhoto || permissionState !== 'granted' || countdown !== null) return;
+
+    captureLiveThumb();
+    const intervalId = setInterval(captureLiveThumb, 700);
+    return () => clearInterval(intervalId);
+  }, [capturedPhoto, permissionState, countdown, captureLiveThumb]);
+
   const startCountdown = () => {
     if (countdown !== null) return;
     setCountdown(4);
@@ -110,16 +148,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Save as JPEG
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-
-    // Stop camera feed after shutter sound plays
+    // Stop camera feed after shutter sound plays, then bake the filter
+    // the user picked before shooting into the full-resolution capture.
     setTimeout(() => {
-      setFlashActive(false);
-      setCapturedPhoto(dataUrl);
-      stopCamera();
+      void (async () => {
+        setFlashActive(false);
+        try {
+          const finalDataUrl = await applyFilter(canvas, selectedFilter);
+          setCapturedPhoto(finalDataUrl);
+        } catch (err) {
+          console.error('Failed to bake filter into captured photo, using raw frame:', err);
+          setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.95));
+        }
+        stopCamera();
+      })();
     }, 250);
-  }, [facingMode, stopCamera]);
+  }, [facingMode, stopCamera, selectedFilter]);
 
   // Countdown timer loop
   useEffect(() => {
@@ -180,13 +224,45 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
               playsInline
               muted
               className="camera-feed"
+              style={{ filter: CSS_FILTER_PREVIEWS[selectedFilter] }}
             />
+            {selectedFilter !== 'none' && countdown === null && (
+              <div className="live-filter-badge">
+                <Palette size={12} /> {FILTER_OPTIONS.find((f) => f.id === selectedFilter)?.name}
+              </div>
+            )}
             {countdown !== null && (
               <div className="countdown-overlay">
                 <div className="countdown-number">{countdown}</div>
               </div>
             )}
             <div className={`camera-flash ${flashActive ? 'flash-active' : ''}`} />
+          </div>
+
+          <div className="filter-strip-section">
+            <div className="filter-strip-header">
+              <Palette size={14} /> Pick your look before you shoot
+            </div>
+            <div className="filter-strip">
+              {FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  className={`filter-chip ${selectedFilter === option.id ? 'active' : ''}`}
+                  onClick={() => setSelectedFilter(option.id)}
+                  disabled={countdown !== null}
+                  title={option.description}
+                >
+                  <span
+                    className="filter-chip-avatar"
+                    style={{
+                      backgroundImage: liveThumb ? `url(${liveThumb})` : undefined,
+                      filter: CSS_FILTER_PREVIEWS[option.id]
+                    }}
+                  />
+                  <span className="filter-chip-name">{option.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="capture-controls">
@@ -213,13 +289,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
       ) : (
         <div className="captured-preview-container">
           <img src={capturedPhoto} alt="Captured preview" className="captured-image" />
-          
+
+          {selectedFilter !== 'none' && (
+            <div className="live-filter-badge static">
+              <Palette size={12} /> {FILTER_OPTIONS.find((f) => f.id === selectedFilter)?.name} applied
+            </div>
+          )}
+
           <div className="preview-actions">
             <button className="btn-secondary" onClick={handleRetake}>
               <RefreshCw size={18} /> Retake
             </button>
             <button className="btn-primary" onClick={handleConfirm}>
-              <Check size={18} /> Keep Photo & Select Filter <ArrowRight size={16} />
+              <Check size={18} /> Keep Photo & Start Puzzle <ArrowRight size={16} />
             </button>
           </div>
         </div>

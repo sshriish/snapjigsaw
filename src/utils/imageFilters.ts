@@ -32,6 +32,25 @@ export const FILTER_OPTIONS: FilterOption[] = [
 ];
 
 /**
+ * Lightweight CSS `filter` approximations of each look, used for the live
+ * camera viewfinder preview and filter-strip thumbnails (cheap, GPU-accelerated).
+ * The real, higher-quality pixel-level version from applyFilter() below is what
+ * actually gets baked into the captured photo.
+ */
+export const CSS_FILTER_PREVIEWS: Record<FilterType, string> = {
+  none: 'none',
+  cinematic: 'contrast(1.2) saturate(1.15) sepia(0.1) brightness(1.02)',
+  vintage: 'sepia(0.25) contrast(0.88) brightness(1.08) saturate(0.75)',
+  sepia: 'sepia(0.75) contrast(1.05)',
+  bw: 'grayscale(1) contrast(1.25)',
+  vhs: 'saturate(1.4) contrast(1.15) hue-rotate(-6deg) brightness(1.03)',
+  warm_film: 'sepia(0.18) saturate(1.25) brightness(1.06) contrast(1.02)',
+  cool_tone: 'saturate(1.1) hue-rotate(8deg) brightness(0.96) contrast(1.05)',
+  grainy_35mm: 'contrast(1.2) brightness(1.05) saturate(0.95)',
+  polaroid_classic: 'brightness(1.18) contrast(0.82) saturate(0.82) sepia(0.08)'
+};
+
+/**
  * Applies a filter to an image source and returns the filtered image as a data URL.
  */
 export async function applyFilter(

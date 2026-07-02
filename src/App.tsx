@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Camera, Image as ImageIcon, Sparkles, Trophy, ShieldCheck } from 'lucide-react';
 import { CameraCapture } from './components/CameraCapture';
-import { FilterSelector } from './components/FilterSelector';
 import { JigsawPuzzle } from './components/JigsawPuzzle';
 import { PolaroidReveal } from './components/PolaroidReveal';
 import { PolaroidWall } from './components/PolaroidWall';
-import type { FilterType } from './utils/imageFilters';
 import './App.css';
 
-type Screen = 'LANDING' | 'CAPTURE' | 'FILTER' | 'PUZZLE' | 'REVEAL' | 'WALL';
+type Screen = 'LANDING' | 'CAPTURE' | 'PUZZLE' | 'REVEAL' | 'WALL';
 
 interface Polaroid {
   id: string;
@@ -21,7 +19,6 @@ interface Polaroid {
 function App() {
   // Screen and Flow States
   const [screen, setScreen] = useState<Screen>('LANDING');
-  const [rawPhoto, setRawPhoto] = useState<string | null>(null);
   const [filteredPhoto, setFilteredPhoto] = useState<string | null>(null);
 
   // Game Settings States
@@ -69,13 +66,10 @@ function App() {
   };
 
   // Handlers for App Navigation Flow
+  // The camera screen now handles filter selection live, before the shutter
+  // fires, so the captured photo already has the chosen look baked in.
   const handlePhotoCaptured = (photo: string) => {
-    setRawPhoto(photo);
-    setScreen('FILTER');
-  };
-
-  const handleFilterApplied = (filteredPhotoUrl: string, _filter: FilterType) => {
-    setFilteredPhoto(filteredPhotoUrl);
+    setFilteredPhoto(photo);
     setScreen('PUZZLE');
   };
 
@@ -92,7 +86,6 @@ function App() {
 
   const handleDiscard = () => {
     setHasDiscardedInStreak(true);
-    setRawPhoto(null);
     setFilteredPhoto(null);
     setScreen('CAPTURE');
   };
@@ -103,7 +96,6 @@ function App() {
     updateStreak(0);
     setHasDiscardedInStreak(false);
 
-    setRawPhoto(null);
     setFilteredPhoto(null);
 
     setScreen('WALL');
@@ -154,7 +146,7 @@ function App() {
 
             <h2 className="landing-title">Snap, Solve &amp; Collect</h2>
             <p className="landing-desc">
-              Capture a photo, apply vintage analog filters, and solve the generated jigsaw puzzle. 
+              Pick a vintage analog filter, snap your photo already styled, and solve the generated jigsaw puzzle.
               Assemble 3 puzzles in a row to develop a customized digital polaroid for your gallery wall!
             </p>
 
@@ -211,14 +203,6 @@ function App() {
           <CameraCapture
             onCapture={handlePhotoCaptured}
             onBack={() => setScreen('LANDING')}
-          />
-        )}
-
-        {screen === 'FILTER' && rawPhoto && (
-          <FilterSelector
-            photoDataUrl={rawPhoto}
-            onFilterSelected={handleFilterApplied}
-            onCancel={() => setScreen('CAPTURE')}
           />
         )}
 

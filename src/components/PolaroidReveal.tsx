@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Download, Share2, Save, ArrowLeft } from 'lucide-react';
 import { enhanceImage } from '../utils/imageEnhance';
+import { FRAME_STYLES, drawFrameBackground, getFrameTextColor, getFrameDateColor } from '../utils/frameStyles';
 
 interface PolaroidRevealProps {
   photoDataUrl: string; // Already has filters baked in
@@ -35,14 +36,6 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
   });
 
   const polaroidRef = useRef<HTMLDivElement>(null);
-
-  // Unlocked frame styles based on gallery size thresholds
-  const FRAME_STYLES = [
-    { id: 'classic', name: 'Classic', required: 0 },
-    { id: 'neon', name: 'Synthwave', required: 2 },
-    { id: 'vintage-dark', name: 'Noir Dark', required: 4 },
-    { id: 'cyberpunk', name: 'Cyberpunk', required: 6 }
-  ];
 
   // 1. Run AI Enhancement Pass
   useEffect(() => {
@@ -101,32 +94,7 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
     });
 
     // 1. Background Fill based on style
-    if (frameStyle === 'neon') {
-      ctx.fillStyle = '#111111';
-      ctx.fillRect(0, 0, 640, 800);
-      // Neon pink outline
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 634, 794);
-    } else if (frameStyle === 'vintage-dark') {
-      ctx.fillStyle = '#2a2522';
-      ctx.fillRect(0, 0, 640, 800);
-    } else if (frameStyle === 'cyberpunk') {
-      ctx.fillStyle = '#0a0a14';
-      ctx.fillRect(0, 0, 640, 800);
-      // Neon green outline
-      ctx.strokeStyle = '#39ff14';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 634, 794);
-    } else {
-      // Classic white polaroid paper style
-      ctx.fillStyle = '#fdfdfd';
-      ctx.fillRect(0, 0, 640, 800);
-      // Faint inner outline for card texture
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(4, 4, 632, 792);
-    }
+    drawFrameBackground(ctx, frameStyle, 640, 800);
 
     // 2. Draw Image box
     const imgPadX = 32;
@@ -141,14 +109,9 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
 
     // 3. Draw Date and Caption texts in font stylings
     ctx.textAlign = 'center';
-    
+
     // Choose font colors based on style
-    let textStyle = '#1a1a24';
-    if (frameStyle === 'neon' || frameStyle === 'vintage-dark') {
-      textStyle = '#ffffff';
-    } else if (frameStyle === 'cyberpunk') {
-      textStyle = '#39ff14';
-    }
+    const textStyle = getFrameTextColor(frameStyle);
     ctx.fillStyle = textStyle;
 
     // We fallback to standard cursive/Satisfy-style cursive look on canvas text
@@ -157,7 +120,7 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
     ctx.fillText(textCaption, 320, 670);
 
     ctx.font = '22px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillStyle = frameStyle === 'cyberpunk' ? '#ff007f' : textStyle;
+    ctx.fillStyle = getFrameDateColor(frameStyle);
     ctx.fillText(dateStr, 320, 730);
 
     return canvas;

@@ -317,6 +317,136 @@
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1); /* Mirror camera feed for natural interaction */
+  transition: filter 0.35s ease;
+}
+
+/* Live filter name badge shown over the viewfinder */
+.live-filter-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(8, 7, 13, 0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  animation: filterBadgeIn 0.3s ease;
+}
+
+.live-filter-badge.static {
+  position: static;
+  align-self: center;
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.08);
+  border-color: var(--accent-cyan);
+}
+
+@keyframes filterBadgeIn {
+  0% { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================================
+   PRE-CAPTURE LIVE FILTER STRIP
+   ======================================================== */
+.filter-strip-section {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-strip-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.filter-strip {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 4px 8px 4px;
+  scroll-snap-type: x proximity;
+}
+
+.filter-strip::-webkit-scrollbar {
+  height: 5px;
+}
+
+.filter-strip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+
+.filter-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 2px;
+  scroll-snap-align: start;
+  opacity: 0.85;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.filter-chip:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.filter-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.filter-chip-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #1a1a24;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid var(--panel-border);
+  transition: border-color 0.2s, box-shadow 0.2s, filter 0.35s ease;
+}
+
+.filter-chip.active {
+  opacity: 1;
+}
+
+.filter-chip.active .filter-chip-avatar {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px var(--accent-cyan-glow);
+  transform: scale(1.06);
+}
+
+.filter-chip-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.filter-chip.active .filter-chip-name {
+  color: var(--accent-cyan);
 }
 
 /* Countdown Overlay */
@@ -407,104 +537,6 @@
   flex: 1;
   justify-content: center;
   padding: 14px;
-}
-
-/* ========================================================
-   FILTER SCREEN
-   ======================================================== */
-.filter-card {
-  max-width: 800px;
-  width: 100%;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.filter-display-area {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 768px) {
-  .filter-display-area {
-    grid-template-columns: 1fr;
-  }
-}
-
-.filter-preview-main {
-  width: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 16px;
-  object-fit: cover;
-  border: 1px solid var(--panel-border);
-}
-
-.filter-options-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.filter-options-header {
-  font-size: 15px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: 0.5px;
-}
-
-.filter-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  max-height: 380px;
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
-.filter-tile {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  padding: 8px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.filter-tile:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.filter-tile.active {
-  background: rgba(6, 182, 212, 0.08);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
-}
-
-.filter-tile-name {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.filter-tile-desc {
-  font-size: 10px;
-  color: var(--text-muted);
-  line-height: 1.3;
-}
-
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  width: 100%;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--panel-border);
 }
 
 /* ========================================================
@@ -880,29 +912,83 @@
   transition: transform 0.3s;
 }
 
-/* Unlocked special frame styles */
-.polaroid-frame.style-classic {
+/* Unlocked special frame styles.
+   Each rule targets both the big reveal/lightbox card (.polaroid-frame)
+   and the small gallery wall card (.scrapbook-polaroid) so a chosen
+   frame looks consistent everywhere it appears. */
+.polaroid-frame.style-classic,
+.scrapbook-polaroid.style-classic {
   background: #f9f8f4;
 }
 
-.polaroid-frame.style-neon {
+.polaroid-frame.style-neon,
+.scrapbook-polaroid.style-neon {
   background: #111;
   color: #fff;
   border: 2px solid var(--accent-purple);
   box-shadow: 0 0 20px var(--accent-purple-glow);
 }
 
-.polaroid-frame.style-vintage-dark {
+.polaroid-frame.style-vintage-dark,
+.scrapbook-polaroid.style-vintage-dark {
   background: #2a2522;
   color: #f7ede2;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.polaroid-frame.style-cyberpunk {
+.polaroid-frame.style-cyberpunk,
+.scrapbook-polaroid.style-cyberpunk {
   background: #0a0a14;
   color: #39ff14;
   border: 2px solid #ff007f;
   box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+}
+
+.polaroid-frame.style-kraft,
+.scrapbook-polaroid.style-kraft {
+  background: #c9a876;
+  color: #3d2b1a;
+  border: 1px dashed rgba(61, 43, 26, 0.35);
+}
+
+.polaroid-frame.style-mint,
+.scrapbook-polaroid.style-mint {
+  background: #eafaf1;
+  color: #064e3b;
+  border: 2px solid #10b981;
+}
+
+.polaroid-frame.style-gold,
+.scrapbook-polaroid.style-gold {
+  background: #1a1508;
+  color: #d4af37;
+  border: 2px solid #d4af37;
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.35);
+}
+
+.polaroid-frame.style-rose,
+.scrapbook-polaroid.style-rose {
+  background: #fff0f3;
+  color: #881337;
+  border: 2px solid #fb7185;
+}
+
+.polaroid-frame.style-blueprint,
+.scrapbook-polaroid.style-blueprint {
+  background:
+    linear-gradient(rgba(99, 179, 237, 0.14) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(90deg, rgba(99, 179, 237, 0.14) 1px, transparent 1px) 0 0 / 16px 16px,
+    #0a2540;
+  color: #ffffff;
+  border: 2px solid #63b3ed;
+}
+
+.polaroid-frame.style-holo,
+.scrapbook-polaroid.style-holo {
+  background: linear-gradient(135deg, #a855f7 0%, #06b6d4 35%, #f472b6 65%, #facc15 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.25);
 }
 
 .polaroid-image-container {
@@ -957,8 +1043,11 @@
 
 .style-neon .polaroid-caption::placeholder,
 .style-vintage-dark .polaroid-caption::placeholder,
-.style-cyberpunk .polaroid-caption::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+.style-cyberpunk .polaroid-caption::placeholder,
+.style-gold .polaroid-caption::placeholder,
+.style-blueprint .polaroid-caption::placeholder,
+.style-holo .polaroid-caption::placeholder {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .polaroid-date {
@@ -975,7 +1064,7 @@
 
 .frame-styles-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 8px;
   margin-top: 8px;
 }

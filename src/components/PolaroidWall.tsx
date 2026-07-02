@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Image as ImageIcon, Trash2, Download, Share2, ArrowLeft } from 'lucide-react';
+import { drawFrameBackground, getFrameTextColor, getFrameDateColor } from '../utils/frameStyles';
 
 interface Polaroid {
   id: string;
@@ -39,28 +40,7 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
       img.onload = resolve;
     });
 
-    if (polaroid.frameStyle === 'neon') {
-      ctx.fillStyle = '#111111';
-      ctx.fillRect(0, 0, 640, 800);
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 634, 794);
-    } else if (polaroid.frameStyle === 'vintage-dark') {
-      ctx.fillStyle = '#2a2522';
-      ctx.fillRect(0, 0, 640, 800);
-    } else if (polaroid.frameStyle === 'cyberpunk') {
-      ctx.fillStyle = '#0a0a14';
-      ctx.fillRect(0, 0, 640, 800);
-      ctx.strokeStyle = '#39ff14';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 634, 794);
-    } else {
-      ctx.fillStyle = '#fdfdfd';
-      ctx.fillRect(0, 0, 640, 800);
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(4, 4, 632, 792);
-    }
+    drawFrameBackground(ctx, polaroid.frameStyle, 640, 800);
 
     ctx.drawImage(img, 32, 32, 576, 576);
     ctx.strokeStyle = 'rgba(0,0,0,0.12)';
@@ -68,19 +48,14 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
     ctx.strokeRect(32, 32, 576, 576);
 
     ctx.textAlign = 'center';
-    let textStyle = '#1a1a24';
-    if (polaroid.frameStyle === 'neon' || polaroid.frameStyle === 'vintage-dark') {
-      textStyle = '#ffffff';
-    } else if (polaroid.frameStyle === 'cyberpunk') {
-      textStyle = '#39ff14';
-    }
+    const textStyle = getFrameTextColor(polaroid.frameStyle);
     ctx.fillStyle = textStyle;
 
     ctx.font = '36px "Satisfy", "Brush Script MT", cursive';
     ctx.fillText(polaroid.caption, 320, 670);
 
     ctx.font = '22px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillStyle = polaroid.frameStyle === 'cyberpunk' ? '#ff007f' : textStyle;
+    ctx.fillStyle = getFrameDateColor(polaroid.frameStyle);
     ctx.fillText(polaroid.date, 320, 730);
 
     return canvas;
