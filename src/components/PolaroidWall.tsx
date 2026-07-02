@@ -124,7 +124,8 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
           <ImageIcon className="empty-wall-icon" size={64} />
           <h3>Your Polaroid Wall is Empty</h3>
           <p className="app-subtitle" style={{ maxWidth: '340px' }}>
-            Complete 3 jigsaw puzzles in a row to earn your first digital polaroid memory card!
+            Solve a jigsaw puzzle, then choose to turn it into a polaroid — or merge a few
+            solved photos together — to earn your first digital memory card!
           </p>
           <button className="btn-primary" onClick={onBack}>
             <Camera size={18} /> Solve Puzzles Now
