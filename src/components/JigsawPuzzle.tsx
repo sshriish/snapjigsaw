@@ -331,11 +331,11 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
       <div className="puzzle-status-bar">
         <div className="status-item">
           <Award size={18} />
-          <span>Attempt: <span className="status-value">{attemptNumber} of 3</span></span>
+          <span>Attempt: <span className="status-value">#{attemptNumber}</span></span>
         </div>
         <div className="status-item">
           <Trophy size={18} />
-          <span>Streak: <span className="status-value">{streakCount} of 3</span></span>
+          <span>Streak: <span className="status-value">{streakCount}</span></span>
         </div>
         <div className="status-item">
           <Timer size={18} />
@@ -470,9 +470,9 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
           <Trash2 size={16} /> Discard & Start Over
         </button>
 
-        {isWin && (
+         {isWin && (
           <button className="btn-primary" onClick={onSolveComplete}>
-            Proceed to Reveal <ArrowRight size={18} />
+            Continue <ArrowRight size={18} />
           </button>
         )}
       </div>
