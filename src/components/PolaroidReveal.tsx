@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Download, Share2, Save, ArrowLeft } from 'lucide-react';
 import { enhanceImage } from '../utils/imageEnhance';
+import { composeMergedImage } from '../utils/imageMerge';
 import { FRAME_STYLES, drawFrameBackground, getFrameTextColor, getFrameDateColor } from '../utils/frameStyles';
 
 interface PolaroidRevealProps {
-  photoDataUrl: string; // Already has filters baked in
+  photos: string[]; // 1-3 photos, already have filters baked in. >1 gets merged into a collage.
   totalPolaroidsCount: number;
   perfectStreak: boolean;
   onSave: (polaroid: {
@@ -18,12 +19,15 @@ interface PolaroidRevealProps {
 }
 
 export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
-  photoDataUrl,
+  photos,
   totalPolaroidsCount,
   perfectStreak,
   onSave,
   onCancel
 }) => {
+  const isMerge = photos.length > 1;
+  const previewPhoto = photos[0];
+
   const [isEnhancing, setIsEnhancing] = useState(true);
   const [enhancedPhoto, setEnhancedPhoto] = useState<string | null>(null);
   const [isDeveloping, setIsDeveloping] = useState(false);
@@ -37,16 +41,19 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
 
   const polaroidRef = useRef<HTMLDivElement>(null);
 
-  // 1. Run AI Enhancement Pass
+  // 1. Run AI Enhancement Pass on every photo, then merge into one flattened
+  //    square image (a no-op merge when there's only a single photo).
   useEffect(() => {
     let active = true;
 
     async function runEnhancement() {
       setIsEnhancing(true);
       try {
-        const result = await enhanceImage(photoDataUrl);
+        const enhancedList = await Promise.all(photos.map((p) => enhanceImage(p)));
         if (!active) return;
-        setEnhancedPhoto(result);
+        const merged = await composeMergedImage(enhancedList);
+        if (!active) return;
+        setEnhancedPhoto(merged);
         setIsEnhancing(false);
 
         // 2. Start developing chemical reveal animation
@@ -54,7 +61,14 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
       } catch (err) {
         console.error('Enhancement pipeline failed, falling back:', err);
         if (!active) return;
-        setEnhancedPhoto(photoDataUrl);
+        try {
+          const fallbackMerged = await composeMergedImage(photos);
+          if (!active) return;
+          setEnhancedPhoto(fallbackMerged);
+        } catch {
+          if (!active) return;
+          setEnhancedPhoto(previewPhoto);
+        }
         setIsEnhancing(false);
         setIsDeveloping(true);
       }
@@ -64,7 +78,8 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
     return () => {
       active = false;
     };
-  }, [photoDataUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos]);
 
   // Handle chemical reveal fade duration
   useEffect(() => {
@@ -184,14 +199,17 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
     <div className="glass-panel reveal-card">
       {isEnhancing ? (
         <div className="scan-container">
-          <img src={photoDataUrl} alt="Enhancing scan" className="scan-image" />
+          <img src={previewPhoto} alt="Enhancing scan" className="scan-image" />
           <div className="scanner-bar" />
           <div style={{ position: 'absolute', bottom: '24px', width: '100%', textAlign: 'center', color: '#fff' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <Sparkles className="app-logo" size={18} /> AI Quality Enhancer Pass...
+              <Sparkles className="app-logo" size={18} />
+              {isMerge ? `Merging ${photos.length} Photos...` : 'AI Quality Enhancer Pass...'}
             </h3>
             <p className="app-subtitle" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-              Upscaling resolution and smoothing sensor grain
+              {isMerge
+                ? 'Compositing your shots into one collage card'
+                : 'Upscaling resolution and smoothing sensor grain'}
             </p>
           </div>
         </div>
@@ -205,12 +223,17 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
               ? 'Watch the chemicals react as the picture develops' 
               : 'Add a custom handwritten label and customize your photo frame style'}
           </p>
+          {!isDeveloping && isMerge && (
+            <p className="app-subtitle" style={{ marginTop: '-14px', marginBottom: '20px', fontSize: '12px' }}>
+              🧩 Collage made from {photos.length} solved photos
+            </p>
+          )}
 
           {/* Polaroid Frame Graphic */}
           <div ref={polaroidRef} className={`polaroid-frame style-${frameStyle}`}>
             <div className="polaroid-image-container">
               <img
-                src={enhancedPhoto || photoDataUrl}
+                src={enhancedPhoto || previewPhoto}
                 alt="Developing snap"
                 className={`polaroid-photo ${isDeveloping ? 'developing' : 'developed'}`}
               />
@@ -273,8 +296,8 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
                   </button>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                  <button className="btn-secondary" style={{ flex: 1 }} onClick={onCancel} title="Discard this Polaroid">
-                    <ArrowLeft size={18} /> Discard
+                  <button className="btn-secondary" style={{ flex: 1 }} onClick={onCancel} title="Go back and choose a different option">
+                    <ArrowLeft size={18} /> Back
                   </button>
                   <button className="btn-primary" style={{ flex: 2, justifyContent: 'center' }} onClick={handleSaveToWall}>
                     <Save size={18} /> Save to Polaroid Wall
