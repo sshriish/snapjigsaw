@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Camera, Image as ImageIcon, Sparkles, Trophy, ShieldCheck } from 'lucide-react';
 import { CameraCapture } from './components/CameraCapture';
 import { JigsawPuzzle } from './components/JigsawPuzzle';
+import { PolaroidChoice } from './components/PolaroidChoice';
 import { PolaroidReveal } from './components/PolaroidReveal';
 import { PolaroidWall } from './components/PolaroidWall';
 import './App.css';
 
-type Screen = 'LANDING' | 'CAPTURE' | 'PUZZLE' | 'REVEAL' | 'WALL';
+type Screen = 'LANDING' | 'CAPTURE' | 'PUZZLE' | 'CHOICE' | 'REVEAL' | 'WALL';
+
+// How many recently-solved photos we keep around as merge candidates.
+const MAX_PHOTO_HISTORY = 3;
 
 interface Polaroid {
   id: string;
@@ -20,6 +24,12 @@ function App() {
   // Screen and Flow States
   const [screen, setScreen] = useState<Screen>('LANDING');
   const [filteredPhoto, setFilteredPhoto] = useState<string | null>(null);
+
+  // Recently solved photos, newest first (max MAX_PHOTO_HISTORY), used to let
+  // the player pick single vs. merged polaroids on the choice screen.
+  const [photoHistory, setPhotoHistory] = useState<string[]>([]);
+  // The 1-3 photos the player picked on the choice screen to send to REVEAL.
+  const [photosForReveal, setPhotosForReveal] = useState<string[]>([]);
 
   // Game Settings States
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
@@ -74,18 +84,36 @@ function App() {
   };
 
   const handlePuzzleSolved = () => {
-    const nextStreak = streakCount + 1;
-    
-    if (nextStreak >= 3) {
-      setScreen('REVEAL');
-    } else {
-      updateStreak(nextStreak);
-      setScreen('LANDING');
-    }
+    if (!filteredPhoto) return;
+
+    updateStreak(streakCount + 1);
+    setPhotoHistory((prev) => [filteredPhoto, ...prev].slice(0, MAX_PHOTO_HISTORY));
+    setScreen('CHOICE');
   };
 
   const handleDiscard = () => {
     setHasDiscardedInStreak(true);
+    setFilteredPhoto(null);
+    setScreen('CAPTURE');
+  };
+
+  // From the CHOICE screen: turn the newest solved photo into a polaroid.
+  const handleChooseSingle = () => {
+    if (photoHistory.length === 0) return;
+    setPhotosForReveal([photoHistory[0]]);
+    setScreen('REVEAL');
+  };
+
+  // From the CHOICE screen: merge the last 2 or 3 solved photos into one collage polaroid.
+  const handleChooseMerge = (count: 2 | 3) => {
+    if (photoHistory.length < count) return;
+    setPhotosForReveal(photoHistory.slice(0, count));
+    setScreen('REVEAL');
+  };
+
+  // From the CHOICE screen: skip making a polaroid for now and solve another puzzle,
+  // keeping the streak and photo history intact.
+  const handlePlayAgainFromChoice = () => {
     setFilteredPhoto(null);
     setScreen('CAPTURE');
   };
@@ -95,7 +123,8 @@ function App() {
 
     updateStreak(0);
     setHasDiscardedInStreak(false);
-
+    setPhotoHistory([]);
+    setPhotosForReveal([]);
     setFilteredPhoto(null);
 
     setScreen('WALL');
@@ -131,7 +160,7 @@ function App() {
           )}
           {streakCount > 0 && screen !== 'REVEAL' && (
             <div className="btn-secondary" style={{ borderColor: 'var(--accent-purple)', cursor: 'default' }}>
-              <Trophy size={16} className="app-logo" /> Streak: {streakCount}/3
+              <Trophy size={16} className="app-logo" /> Streak: {streakCount}
             </div>
           )}
         </div>
@@ -147,7 +176,8 @@ function App() {
             <h2 className="landing-title">Snap, Solve &amp; Collect</h2>
             <p className="landing-desc">
               Pick a vintage analog filter, snap your photo already styled, and solve the generated jigsaw puzzle.
-              Assemble 3 puzzles in a row to develop a customized digital polaroid for your gallery wall!
+              After every solve, it's your call: develop a polaroid right away, merge your last 2 or 3 photos
+              into one collage card, or keep solving before you decide!
             </p>
 
             <div className="settings-section">
@@ -218,13 +248,23 @@ function App() {
           />
         )}
 
-        {screen === 'REVEAL' && filteredPhoto && (
+        {screen === 'CHOICE' && (
+          <PolaroidChoice
+            photoHistory={photoHistory}
+            streakCount={streakCount}
+            onSelectSingle={handleChooseSingle}
+            onSelectMerge={handleChooseMerge}
+            onPlayAgain={handlePlayAgainFromChoice}
+          />
+        )}
+
+        {screen === 'REVEAL' && photosForReveal.length > 0 && (
           <PolaroidReveal
-            photoDataUrl={filteredPhoto}
+            photos={photosForReveal}
             totalPolaroidsCount={totalPolaroids}
             perfectStreak={!hasDiscardedInStreak}
             onSave={handlePolaroidSaved}
-            onCancel={() => setScreen('LANDING')}
+            onCancel={() => setScreen('CHOICE')}
           />
         )}
 
