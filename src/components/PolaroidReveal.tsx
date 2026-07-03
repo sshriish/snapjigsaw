@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Download, Share2, Save, ArrowLeft, RectangleHorizontal, RectangleVertical } from 'lucide-react';
-import { enhanceImage } from '../utils/imageEnhance';
 import { composeMergedImage } from '../utils/imageMerge';
 import {
   FRAME_STYLES,
@@ -62,17 +61,17 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
 
   const polaroidRef = useRef<HTMLDivElement>(null);
 
-  // 1. Run AI Enhancement Pass on every photo, then merge into one flattened
-  //    square image (a no-op merge when there's only a single photo).
+  // 1. Merge photos into one flattened square image (a no-op merge when
+  //    there's only a single photo). Photos are already run through the
+  //    enhancement pipeline at capture time, so we don't re-enhance here —
+  //    doing so twice would over-sharpen/over-saturate the image.
   useEffect(() => {
     let active = true;
 
     async function runEnhancement() {
       setIsEnhancing(true);
       try {
-        const enhancedList = await Promise.all(photos.map((p) => enhanceImage(p)));
-        if (!active) return;
-        const merged = await composeMergedImage(enhancedList);
+        const merged = await composeMergedImage(photos);
         if (!active) return;
         setEnhancedPhoto(merged);
         setIsEnhancing(false);
@@ -80,16 +79,9 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
         // 2. Start developing chemical reveal animation
         setIsDeveloping(true);
       } catch (err) {
-        console.error('Enhancement pipeline failed, falling back:', err);
+        console.error('Merge pipeline failed, falling back:', err);
         if (!active) return;
-        try {
-          const fallbackMerged = await composeMergedImage(photos);
-          if (!active) return;
-          setEnhancedPhoto(fallbackMerged);
-        } catch {
-          if (!active) return;
-          setEnhancedPhoto(previewPhoto);
-        }
+        setEnhancedPhoto(previewPhoto);
         setIsEnhancing(false);
         setIsDeveloping(true);
       }
