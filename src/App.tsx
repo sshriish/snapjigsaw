@@ -7,6 +7,7 @@ import { PolaroidReveal } from './components/PolaroidReveal';
 import { PolaroidWall } from './components/PolaroidWall';
 import { IntroSplash } from './components/IntroSplash';
 import { FloralCorners } from './components/FloralCorners';
+import { enhanceImage } from './utils/imageEnhance';
 import './App.css';
 
 // Show the teddy-bear intro once per browser session, not on every screen
@@ -69,6 +70,7 @@ function App() {
   const [streakCount, setStreakCount] = useState<number>(0);
   const [hasDiscardedInStreak, setHasDiscardedInStreak] = useState<boolean>(false);
   const [polaroids, setPolaroids] = useState<Polaroid[]>([]);
+  const [isEnhancing, setIsEnhancing] = useState<boolean>(false);
 
   // Load the streak from localStorage
   useEffect(() => {
@@ -108,9 +110,19 @@ function App() {
   // Handlers for App Navigation Flow
   // The camera screen now handles filter selection live, before the shutter
   // fires, so the captured photo already has the chosen look baked in.
-  const handlePhotoCaptured = (photo: string) => {
-    setFilteredPhoto(photo);
-    setScreen('PUZZLE');
+  const handlePhotoCaptured = async (photo: string) => {
+    setIsEnhancing(true);
+    try {
+      // Boost quality: upscale + denoise + sharpen + auto-contrast
+      const enhanced = await enhanceImage(photo);
+      setFilteredPhoto(enhanced);
+    } catch (err) {
+      console.error('Photo enhancement failed, using original capture', err);
+      setFilteredPhoto(photo);
+    } finally {
+      setIsEnhancing(false);
+      setScreen('PUZZLE');
+    }
   };
 
   const handlePuzzleSolved = () => {
@@ -174,6 +186,12 @@ function App() {
   return (
     <>
       {showIntro && <IntroSplash onComplete={handleIntroComplete} />}
+      {isEnhancing && (
+        <div className="enhance-overlay" role="status" aria-live="polite">
+          <div className="enhance-spinner" />
+          <p>Enhancing your photo…</p>
+        </div>
+      )}
       <FloralCorners />
       <div className="app-container">
       <header className="app-header">
