@@ -5,7 +5,13 @@ import { JigsawPuzzle } from './components/JigsawPuzzle';
 import { PolaroidChoice } from './components/PolaroidChoice';
 import { PolaroidReveal } from './components/PolaroidReveal';
 import { PolaroidWall } from './components/PolaroidWall';
+import { IntroSplash } from './components/IntroSplash';
+import { FloralCorners } from './components/FloralCorners';
 import './App.css';
+
+// Show the teddy-bear intro once per browser session, not on every screen
+// change/reload within the same visit.
+const INTRO_SESSION_KEY = 'snapjigsaw_intro_seen';
 
 type Screen = 'LANDING' | 'CAPTURE' | 'PUZZLE' | 'CHOICE' | 'REVEAL' | 'WALL';
 
@@ -26,6 +32,25 @@ interface Polaroid {
 }
 
 function App() {
+  // Whether the teddy-bear polaroid intro is still playing. Skipped on
+  // repeat visits within the same browser session.
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(INTRO_SESSION_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleIntroComplete = () => {
+    try {
+      sessionStorage.setItem(INTRO_SESSION_KEY, 'true');
+    } catch {
+      // Ignore — worst case the intro replays next time.
+    }
+    setShowIntro(false);
+  };
+
   // Screen and Flow States
   const [screen, setScreen] = useState<Screen>('LANDING');
   const [filteredPhoto, setFilteredPhoto] = useState<string | null>(null);
@@ -147,7 +172,10 @@ function App() {
   const isHardUnlocked = totalPolaroids >= 3;
 
   return (
-    <div className="app-container">
+    <>
+      {showIntro && <IntroSplash onComplete={handleIntroComplete} />}
+      <FloralCorners />
+      <div className="app-container">
       <header className="app-header">
         <div className="app-title-wrapper" onClick={() => setScreen('LANDING')} style={{ cursor: 'pointer' }}>
           <Sparkles className="app-logo" size={24} />
@@ -281,7 +309,8 @@ function App() {
           />
         )}
       </main>
-    </div>
+      </div>
+    </>
   );
 }
 

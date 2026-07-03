@@ -1,28 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Satisfy&family=Caveat:wght@400;600;700&family=Homemade+Apple&family=Special+Elite&family=Shadows+Into+Light&family=Poppins:wght@400;600;700&family=Permanent+Marker&family=Bebas+Neue&family=Pacifico&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Satisfy&family=Caveat:wght@400;600;700&family=Homemade+Apple&family=Special+Elite&family=Shadows+Into+Light&family=Poppins:wght@400;600;700&family=Permanent+Marker&family=Bebas+Neue&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
 
 :root {
-  /* Premium Dark Theme Color Palette */
-  --bg-gradient-start: #0c0b10;
-  --bg-gradient-end: #181622;
-  --panel-bg: rgba(26, 24, 39, 0.7);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --glass-glow: rgba(147, 51, 234, 0.15);
+  /* Soft Floral / Heirloom-Paper Theme */
+  --bg-gradient-start: #fbf4ec;
+  --bg-gradient-end: #f6ede0;
+  --panel-bg: rgba(255, 253, 249, 0.82);
+  --panel-border: rgba(168, 121, 90, 0.22);
+  --glass-glow: rgba(196, 122, 140, 0.16);
 
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-primary: #4a3428;
+  --text-secondary: #8a7160;
+  --text-muted: #b3a08d;
 
-  --accent-purple: #a855f7;
-  --accent-purple-glow: rgba(168, 85, 247, 0.5);
-  --accent-cyan: #06b6d4;
-  --accent-cyan-glow: rgba(6, 182, 212, 0.5);
-  --accent-pink: #ec4899;
-  --accent-pink-glow: rgba(236, 72, 153, 0.5);
-  
-  --success: #10b981;
-  --error: #ef4444;
+  /* Names kept the same as the original theme so every var() reference
+     throughout the app repaints automatically — purple -> dusty rose,
+     cyan -> sage, pink -> antique gold. */
+  --accent-purple: #c47a8c;
+  --accent-purple-glow: rgba(196, 122, 140, 0.4);
+  --accent-cyan: #7a9676;
+  --accent-cyan-glow: rgba(122, 150, 118, 0.38);
+  --accent-pink: #c9a15a;
+  --accent-pink-glow: rgba(201, 161, 90, 0.4);
+
+  --success: #7a9d7e;
+  --error: #c1666b;
 
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
   --font-handwriting: 'Satisfy', cursive;
   --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
@@ -39,7 +43,10 @@
 
 body {
   font-family: var(--font-sans);
-  background: radial-gradient(circle at 50% 0%, #1e1b2f 0%, var(--bg-gradient-start) 70%);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(196, 122, 140, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(122, 150, 118, 0.08) 0%, transparent 45%),
+    linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
@@ -47,6 +54,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
 }
 
 /* App Container */
@@ -58,6 +66,41 @@ body {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+/* ========================================================
+   FLORAL CORNER ORNAMENTS
+   Fixed, low-opacity vine-and-blossom sprays in all four corners,
+   sitting behind every screen so the frame always feels dressed.
+   ======================================================== */
+.floral-corners {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.floral-corner {
+  position: absolute;
+  width: clamp(120px, 18vw, 220px);
+  height: clamp(120px, 18vw, 220px);
+  opacity: 0.55;
+  color: var(--accent-purple);
+}
+
+.floral-corner.tl { top: -10px; left: -10px; }
+.floral-corner.tr { top: -10px; right: -10px; transform: scaleX(-1); }
+.floral-corner.bl { bottom: -10px; left: -10px; transform: scaleY(-1); }
+.floral-corner.br { bottom: -10px; right: -10px; transform: scale(-1, -1); }
+
+@media (max-width: 640px) {
+  .floral-corner {
+    width: clamp(90px, 30vw, 140px);
+    height: clamp(90px, 30vw, 140px);
+    opacity: 0.45;
+  }
 }
 
 /* Custom Scrollbars */
@@ -66,7 +109,7 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(168, 121, 90, 0.08);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--panel-border);
@@ -106,13 +149,13 @@ body {
   }
 }
 
-/* Glassmorphism Panel style */
+/* Glassmorphism -> soft "pressed paper" Panel style */
 .glass-panel {
   background: var(--panel-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--panel-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: 0 8px 28px 0 rgba(122, 84, 61, 0.14);
   border-radius: 20px;
 }
 
