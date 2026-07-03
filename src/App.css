@@ -1551,3 +1551,76 @@
     transform: rotate(360deg);
   }
 }
+
+/* Merge split-ratio slider (2-photo collages) — lets the user drag how
+   much area each of the two photos gets, instead of a fixed 50/50 split. */
+.merge-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.merge-slider-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.merge-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 99px;
+  background: linear-gradient(
+    90deg,
+    var(--accent-purple) 0%,
+    var(--accent-purple) 50%,
+    var(--accent-cyan) 50%,
+    var(--accent-cyan) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.merge-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent-purple);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.merge-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent-purple);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+/* Small spinner overlay shown briefly on the polaroid photo while it's
+   being quietly re-composited after a slider/orientation change. */
+.remerge-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-top-color: var(--accent-purple);
+  animation: enhance-spin 0.8s linear infinite;
+}
+
+.polaroid-photo.remerging {
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
