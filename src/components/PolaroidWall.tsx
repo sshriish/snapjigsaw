@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Image as ImageIcon, Trash2, Download, Share2, ArrowLeft } from 'lucide-react';
-import { drawFrameBackground, getFrameTextColor, getFrameDateColor } from '../utils/frameStyles';
+import { drawFrameBackground, getFrameTextColor, getFrameDateColor, getFontFamily, ensureFontLoaded, DEFAULT_FONT_ID } from '../utils/frameStyles';
 
 interface Polaroid {
   id: string;
@@ -8,6 +8,11 @@ interface Polaroid {
   caption: string;
   date: string;
   frameStyle: string;
+  orientation?: 'vertical' | 'horizontal';
+  showDate?: boolean;
+  fontId?: string;
+  textColor?: string;
+  dateColor?: string;
 }
 
 interface PolaroidWallProps {
@@ -29,9 +34,14 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
   };
 
   const buildCanvas = async (polaroid: Polaroid): Promise<HTMLCanvasElement> => {
+    const isHorizontal = polaroid.orientation === 'horizontal';
+    const canvasW = isHorizontal ? 800 : 640;
+    const canvasH = isHorizontal ? 640 : 800;
+    const showDate = polaroid.showDate !== false; // default true for legacy saved polaroids
+
     const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 800;
+    canvas.width = canvasW;
+    canvas.height = canvasH;
     const ctx = canvas.getContext('2d')!;
 
     const img = new Image();
@@ -40,23 +50,37 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
       img.onload = resolve;
     });
 
-    drawFrameBackground(ctx, polaroid.frameStyle, 640, 800);
+    const fontId = polaroid.fontId || DEFAULT_FONT_ID;
+    await ensureFontLoaded(fontId, 40);
 
-    ctx.drawImage(img, 32, 32, 576, 576);
+    drawFrameBackground(ctx, polaroid.frameStyle, canvasW, canvasH);
+
+    const imgPadX = 32;
+    const imgPadY = 32;
+    const captionAreaH = showDate ? 168 : 120;
+    const imgW = canvasW - imgPadX * 2;
+    const imgH = canvasH - imgPadY - captionAreaH;
+
+    ctx.drawImage(img, imgPadX, imgPadY, imgW, imgH);
     ctx.strokeStyle = 'rgba(0,0,0,0.12)';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(32, 32, 576, 576);
+    ctx.strokeRect(imgPadX, imgPadY, imgW, imgH);
 
     ctx.textAlign = 'center';
-    const textStyle = getFrameTextColor(polaroid.frameStyle);
-    ctx.fillStyle = textStyle;
+    const centerX = canvasW / 2;
+    const fontFamily = getFontFamily(fontId);
+    const captionY = imgPadY + imgH + 55;
+    const dateY = imgPadY + imgH + 105;
 
-    ctx.font = '36px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillText(polaroid.caption, 320, 670);
+    ctx.fillStyle = polaroid.textColor || getFrameTextColor(polaroid.frameStyle);
+    ctx.font = `36px ${fontFamily}`;
+    ctx.fillText(polaroid.caption, centerX, captionY);
 
-    ctx.font = '22px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillStyle = getFrameDateColor(polaroid.frameStyle);
-    ctx.fillText(polaroid.date, 320, 730);
+    if (showDate) {
+      ctx.font = `22px ${fontFamily}`;
+      ctx.fillStyle = polaroid.dateColor || getFrameDateColor(polaroid.frameStyle);
+      ctx.fillText(polaroid.date, centerX, dateY);
+    }
 
     return canvas;
   };
@@ -138,7 +162,7 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
             return (
               <div key={polaroid.id} className="scrapbook-item-wrapper">
                 <div
-                  className={`scrapbook-polaroid style-${polaroid.frameStyle}`}
+                  className={`scrapbook-polaroid style-${polaroid.frameStyle} orientation-${polaroid.orientation || 'vertical'}`}
                   style={{ transform: `rotate(${rotAngle}deg)` }}
                   onClick={() => setActiveLightbox(polaroid)}
                 >
@@ -151,8 +175,20 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
                     />
                   </div>
                   <div className="polaroid-info">
-                    <span className="polaroid-caption">{polaroid.caption}</span>
-                    <span className="polaroid-date">{polaroid.date}</span>
+                    <span
+                      className="polaroid-caption"
+                      style={{ fontFamily: getFontFamily(polaroid.fontId || DEFAULT_FONT_ID), color: polaroid.textColor }}
+                    >
+                      {polaroid.caption}
+                    </span>
+                    {polaroid.showDate !== false && (
+                      <span
+                        className="polaroid-date"
+                        style={{ fontFamily: getFontFamily(polaroid.fontId || DEFAULT_FONT_ID), color: polaroid.dateColor }}
+                      >
+                        {polaroid.date}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -164,7 +200,10 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
       {activeLightbox && (
         <div className="lightbox-overlay" onClick={() => setActiveLightbox(null)}>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <div className={`polaroid-frame style-${activeLightbox.frameStyle}`} style={{ transform: 'none' }}>
+            <div
+              className={`polaroid-frame style-${activeLightbox.frameStyle} orientation-${activeLightbox.orientation || 'vertical'}`}
+              style={{ transform: 'none' }}
+            >
               <div className="polaroid-image-container">
                 <img
                   src={activeLightbox.imageUrl}
@@ -173,8 +212,20 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
                 />
               </div>
               <div className="polaroid-info">
-                <span className="polaroid-caption">{activeLightbox.caption}</span>
-                <span className="polaroid-date">{activeLightbox.date}</span>
+                <span
+                  className="polaroid-caption"
+                  style={{ fontFamily: getFontFamily(activeLightbox.fontId || DEFAULT_FONT_ID), color: activeLightbox.textColor }}
+                >
+                  {activeLightbox.caption}
+                </span>
+                {activeLightbox.showDate !== false && (
+                  <span
+                    className="polaroid-date"
+                    style={{ fontFamily: getFontFamily(activeLightbox.fontId || DEFAULT_FONT_ID), color: activeLightbox.dateColor }}
+                  >
+                    {activeLightbox.date}
+                  </span>
+                )}
               </div>
             </div>
 
