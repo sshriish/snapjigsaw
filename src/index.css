@@ -43,11 +43,14 @@
 
 body {
   font-family: var(--font-sans);
-  background:
+  background-image:
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='120'%20viewBox='0%200%20120%20120'%3E%3Cg%20fill='rgb(196,122,140)'%20fill-opacity='0.07'%3E%3Ccircle%20cx='18'%20cy='14'%20r='2.4'/%3E%3Ccircle%20cx='24'%20cy='10'%20r='2.4'/%3E%3Ccircle%20cx='26'%20cy='18'%20r='2.4'/%3E%3Ccircle%20cx='20'%20cy='22'%20r='2.4'/%3E%3Ccircle%20cx='14'%20cy='18'%20r='2.4'/%3E%3C/g%3E%3Cellipse%20cx='10'%20cy='26'%20rx='4'%20ry='2'%20transform='rotate(-30%2010%2026)'%20fill='rgb(122,150,118)'%20fill-opacity='0.07'/%3E%3Cg%20fill='rgb(201,161,90)'%20fill-opacity='0.08'%3E%3Ccircle%20cx='78'%20cy='70'%20r='2'/%3E%3Ccircle%20cx='83'%20cy='67'%20r='2'/%3E%3Ccircle%20cx='85'%20cy='73'%20r='2'/%3E%3Ccircle%20cx='80'%20cy='76'%20r='2'/%3E%3Ccircle%20cx='75'%20cy='73'%20r='2'/%3E%3C/g%3E%3Cellipse%20cx='70'%20cy='80'%20rx='4'%20ry='2'%20transform='rotate(25%2070%2080)'%20fill='rgb(122,150,118)'%20fill-opacity='0.07'/%3E%3Ccircle%20cx='95'%20cy='24'%20r='1.6'%20fill='rgb(201,161,90)'%20fill-opacity='0.09'/%3E%3Ccircle%20cx='30'%20cy='92'%20r='1.6'%20fill='rgb(196,122,140)'%20fill-opacity='0.08'/%3E%3C/svg%3E"),
     radial-gradient(circle at 15% 10%, rgba(196, 122, 140, 0.08) 0%, transparent 45%),
     radial-gradient(circle at 85% 90%, rgba(122, 150, 118, 0.08) 0%, transparent 45%),
     linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-  background-attachment: fixed;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 120px 120px, auto, auto, auto;
+  background-attachment: fixed, fixed, fixed, fixed;
   color: var(--text-primary);
   min-height: 100vh;
   min-height: 100svh;
@@ -84,9 +87,9 @@ body {
 
 .floral-corner {
   position: absolute;
-  width: clamp(120px, 18vw, 220px);
-  height: clamp(120px, 18vw, 220px);
-  opacity: 0.55;
+  width: clamp(140px, 21vw, 260px);
+  height: clamp(140px, 21vw, 260px);
+  opacity: 0.65;
   color: var(--accent-purple);
 }
 
@@ -95,11 +98,28 @@ body {
 .floral-corner.bl { bottom: -10px; left: -10px; transform: scaleY(-1); }
 .floral-corner.br { bottom: -10px; right: -10px; transform: scale(-1, -1); }
 
+/* Small accent sprigs along the top/bottom edges, filling in the space
+   between the corner sprays for a fuller, more "in-bloom" frame. */
+.floral-edge {
+  position: absolute;
+  width: clamp(64px, 8vw, 100px);
+  height: clamp(64px, 8vw, 100px);
+  opacity: 0.4;
+  left: 50%;
+}
+
+.floral-edge.top { top: 0; transform: translateX(-50%) scaleY(-1); }
+.floral-edge.bottom { bottom: 0; transform: translateX(-50%); }
+
 @media (max-width: 640px) {
   .floral-corner {
-    width: clamp(90px, 30vw, 140px);
-    height: clamp(90px, 30vw, 140px);
-    opacity: 0.45;
+    width: clamp(100px, 32vw, 160px);
+    height: clamp(100px, 32vw, 160px);
+    opacity: 0.5;
+  }
+
+  .floral-edge {
+    display: none;
   }
 }
 
