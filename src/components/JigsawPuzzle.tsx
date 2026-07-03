@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, RotateCw, Trash2, ArrowRight, Award, Trophy, Timer, Undo2, AlertTriangle } from 'lucide-react';
+import { Eye, EyeOff, RotateCw, Trash2, ArrowRight, Award, Trophy, Timer, Undo2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import { createPuzzlePieces, scramblePieces, checkIsSolved } from '../utils/puzzleHelper';
 import type { PuzzlePiece } from '../utils/puzzleHelper';
 import { playSnap } from '../utils/soundHelper';
@@ -32,6 +32,8 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showGhost, setShowGhost] = useState(true);
   const [ghostOpacity, setGhostOpacity] = useState(0.35);
+  const [showReference, setShowReference] = useState(true);
+  const [referenceExpanded, setReferenceExpanded] = useState(false);
   const [isWin, setIsWin] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
@@ -357,6 +359,16 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
           >
             {showGhost ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
+          <button
+            className={`control-btn ${showReference ? 'active' : ''}`}
+            onClick={() => {
+              setShowReference((prev) => !prev);
+              setReferenceExpanded(false);
+            }}
+            title="Toggle Reference Photo"
+          >
+            <ImageIcon size={18} />
+          </button>
         </div>
       </div>
 
@@ -387,6 +399,21 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
               className="ghost-preview-image"
               style={{ opacity: ghostOpacity }}
             />
+          )}
+
+          {/* Persistent reference thumbnail — the original, uncropped photo,
+              always fully visible (unlike the fading ghost overlay) so the
+              player can check it at any point while solving. */}
+          {showReference && (
+            <button
+              type="button"
+              className={`reference-thumb ${referenceExpanded ? 'expanded' : ''}`}
+              onClick={() => setReferenceExpanded((prev) => !prev)}
+              title={referenceExpanded ? 'Shrink reference photo' : 'Expand reference photo'}
+            >
+              <span className="reference-thumb-label">Reference</span>
+              <img src={photoDataUrl} alt="Original photo reference" />
+            </button>
           )}
 
           {/* Scrambled puzzle pieces */}
@@ -483,6 +510,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
           {rotationMode
             ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate | Keyboard: Arrows to move, Enter to select/swap, R to rotate"
             : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap | Keyboard: Arrows to move, Enter to select/swap"}
+          {' '}Tap the reference thumbnail in the corner to enlarge it anytime.
         </span>
       </div>
 
