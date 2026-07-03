@@ -18,6 +18,11 @@ interface Polaroid {
   caption: string;
   date: string;
   frameStyle: string;
+  orientation?: 'vertical' | 'horizontal';
+  showDate?: boolean;
+  fontId?: string;
+  textColor?: string;
+  dateColor?: string;
 }
 
 function App() {
