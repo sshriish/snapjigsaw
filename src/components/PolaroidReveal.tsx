@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Download, Share2, Save, ArrowLeft } from 'lucide-react';
+import { Sparkles, Download, Share2, Save, ArrowLeft, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { enhanceImage } from '../utils/imageEnhance';
 import { composeMergedImage } from '../utils/imageMerge';
-import { FRAME_STYLES, drawFrameBackground, getFrameTextColor, getFrameDateColor } from '../utils/frameStyles';
+import {
+  FRAME_STYLES,
+  FONT_OPTIONS,
+  TEXT_COLOR_PRESETS,
+  DEFAULT_FONT_ID,
+  drawFrameBackground,
+  getFrameTextColor,
+  getFrameDateColor,
+  getFontFamily,
+  ensureFontLoaded,
+  type PolaroidOrientation
+} from '../utils/frameStyles';
 
 interface PolaroidRevealProps {
   photos: string[]; // 1-3 photos, already have filters baked in. >1 gets merged into a collage.
@@ -14,6 +25,11 @@ interface PolaroidRevealProps {
     caption: string;
     date: string;
     frameStyle: string;
+    orientation: PolaroidOrientation;
+    showDate: boolean;
+    fontId: string;
+    textColor: string;
+    dateColor: string;
   }) => void;
   onCancel: () => void;
 }
@@ -33,6 +49,11 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
   const [isDeveloping, setIsDeveloping] = useState(false);
   const [caption, setCaption] = useState('');
   const [frameStyle, setFrameStyle] = useState('classic');
+  const [orientation, setOrientation] = useState<PolaroidOrientation>('vertical');
+  const [showDate, setShowDate] = useState(true);
+  const [fontId, setFontId] = useState(DEFAULT_FONT_ID);
+  const [textColor, setTextColor] = useState(getFrameTextColor('classic'));
+  const [dateColor, setDateColor] = useState(getFrameDateColor('classic'));
   const dateStr = new Date().toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
@@ -95,9 +116,13 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
   const generatePolaroidCanvas = async (): Promise<HTMLCanvasElement | null> => {
     if (!enhancedPhoto) return null;
 
+    const isHorizontal = orientation === 'horizontal';
+    const canvasW = isHorizontal ? 800 : 640;
+    const canvasH = isHorizontal ? 640 : 800;
+
     const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 800; // Polaroid shape ratio
+    canvas.width = canvasW;
+    canvas.height = canvasH;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
@@ -108,35 +133,42 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
       img.onload = resolve;
     });
 
-    // 1. Background Fill based on style
-    drawFrameBackground(ctx, frameStyle, 640, 800);
+    // Make sure the chosen webfont is actually loaded before we draw with it
+    await ensureFontLoaded(fontId, 40);
 
-    // 2. Draw Image box
+    // 1. Background Fill based on style
+    drawFrameBackground(ctx, frameStyle, canvasW, canvasH);
+
+    // 2. Draw Image box — reserve a fixed strip at the bottom for caption/date
+    //    so it works for both portrait and landscape polaroid shapes.
     const imgPadX = 32;
     const imgPadY = 32;
-    const imgW = 640 - imgPadX * 2;
-    const imgH = imgW; // square photo
+    const captionAreaH = showDate ? 168 : 120;
+    const imgW = canvasW - imgPadX * 2;
+    const imgH = canvasH - imgPadY - captionAreaH;
 
     ctx.drawImage(img, imgPadX, imgPadY, imgW, imgH);
     ctx.strokeStyle = 'rgba(0,0,0,0.15)';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(imgPadX, imgPadY, imgW, imgH);
 
-    // 3. Draw Date and Caption texts in font stylings
+    // 3. Draw caption + (optional) date in the user's chosen font & colors
     ctx.textAlign = 'center';
+    const centerX = canvasW / 2;
+    const fontFamily = getFontFamily(fontId);
+    const captionY = imgPadY + imgH + 55;
+    const dateY = imgPadY + imgH + 105;
 
-    // Choose font colors based on style
-    const textStyle = getFrameTextColor(frameStyle);
-    ctx.fillStyle = textStyle;
-
-    // We fallback to standard cursive/Satisfy-style cursive look on canvas text
-    ctx.font = '36px "Satisfy", "Brush Script MT", cursive';
+    ctx.fillStyle = textColor;
+    ctx.font = `36px ${fontFamily}`;
     const textCaption = caption.trim() || 'A SnapJigsaw Memory';
-    ctx.fillText(textCaption, 320, 670);
+    ctx.fillText(textCaption, centerX, captionY);
 
-    ctx.font = '22px "Satisfy", "Brush Script MT", cursive';
-    ctx.fillStyle = getFrameDateColor(frameStyle);
-    ctx.fillText(dateStr, 320, 730);
+    if (showDate) {
+      ctx.font = `22px ${fontFamily}`;
+      ctx.fillStyle = dateColor;
+      ctx.fillText(dateStr, centerX, dateY);
+    }
 
     return canvas;
   };
@@ -191,7 +223,12 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
       imageUrl: enhancedPhoto,
       caption: caption.trim() || 'Captured Memory',
       date: dateStr,
-      frameStyle
+      frameStyle,
+      orientation,
+      showDate,
+      fontId,
+      textColor,
+      dateColor
     });
   };
 
@@ -230,7 +267,10 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
           )}
 
           {/* Polaroid Frame Graphic */}
-          <div ref={polaroidRef} className={`polaroid-frame style-${frameStyle}`}>
+          <div
+            ref={polaroidRef}
+            className={`polaroid-frame style-${frameStyle} orientation-${orientation}`}
+          >
             <div className="polaroid-image-container">
               <img
                 src={enhancedPhoto || previewPhoto}
@@ -248,41 +288,110 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
                 onChange={(e) => setCaption(e.target.value)}
                 disabled={isDeveloping}
                 className="polaroid-caption"
+                style={{ fontFamily: getFontFamily(fontId), color: textColor }}
               />
-              <span className="polaroid-date">{dateStr}</span>
+              {showDate && (
+                <span className="polaroid-date" style={{ fontFamily: getFontFamily(fontId), color: dateColor }}>
+                  {dateStr}
+                </span>
+              )}
             </div>
           </div>
 
           {!isDeveloping && (
             <>
+              {/* Orientation Toggle */}
+              <div className="frame-styles-row">
+                <span className="settings-label">Polaroid Shape</span>
+                <div className="orientation-toggle-row">
+                  <button
+                    className={`orientation-toggle-btn ${orientation === 'vertical' ? 'active' : ''}`}
+                    onClick={() => setOrientation('vertical')}
+                  >
+                    <RectangleVertical size={16} /> Vertical
+                  </button>
+                  <button
+                    className={`orientation-toggle-btn ${orientation === 'horizontal' ? 'active' : ''}`}
+                    onClick={() => setOrientation('horizontal')}
+                  >
+                    <RectangleHorizontal size={16} /> Horizontal
+                  </button>
+                </div>
+              </div>
+
               {/* Frame Style Selectors */}
               <div className="frame-styles-row">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="settings-label">Unlockable Frames</span>
+                  <span className="settings-label">Frame Style ({totalPolaroidsCount} saved so far)</span>
                   {perfectStreak && (
                     <span className="privacy-badge" style={{ margin: 0, padding: '2px 8px', fontSize: '10px' }}>
-                      ★ Perfect Streak Bonus Unlocked!
+                      ★ Perfect Streak!
                     </span>
                   )}
                 </div>
                 <div className="frame-styles-grid">
-                  {FRAME_STYLES.map((style) => {
-                    const isLocked = totalPolaroidsCount < style.required && !(style.id === 'cyberpunk' && perfectStreak);
-                    return (
-                      <button
-                        key={style.id}
-                        disabled={isLocked}
-                        className={`frame-style-select-btn ${frameStyle === style.id ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
-                        onClick={() => setFrameStyle(style.id)}
-                        title={isLocked ? `Unlocks at ${style.required} total polaroids` : ''}
-                      >
-                        {style.name}
-                        {isLocked && ` (${style.required}★)`}
-                        {style.id === 'cyberpunk' && perfectStreak && ' (Bonus!)'}
-                      </button>
-                    );
-                  })}
+                  {FRAME_STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      className={`frame-style-select-btn ${frameStyle === style.id ? 'active' : ''}`}
+                      onClick={() => setFrameStyle(style.id)}
+                    >
+                      {style.name}
+                      {style.id === 'cyberpunk' && perfectStreak && ' (Bonus!)'}
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              {/* Font Selector */}
+              <div className="frame-styles-row">
+                <span className="settings-label">Caption &amp; Date Font</span>
+                <div className="font-styles-grid">
+                  {FONT_OPTIONS.map((font) => (
+                    <button
+                      key={font.id}
+                      className={`font-select-btn ${fontId === font.id ? 'active' : ''}`}
+                      style={{ fontFamily: font.family }}
+                      onClick={() => setFontId(font.id)}
+                      title={font.vibe === 'classic' ? 'Old-school style' : 'Modern / Gen-Z style'}
+                    >
+                      {font.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Text Color + Date Toggle */}
+              <div className="frame-styles-row">
+                <span className="settings-label">Text Color</span>
+                <div className="color-picker-row">
+                  {TEXT_COLOR_PRESETS.map((c) => (
+                    <button
+                      key={c}
+                      className={`color-swatch-btn ${textColor === c ? 'active' : ''}`}
+                      style={{ background: c }}
+                      onClick={() => {
+                        setTextColor(c);
+                        setDateColor(c);
+                      }}
+                      title={c}
+                    />
+                  ))}
+                  <label className="color-swatch-custom" title="Custom caption color">
+                    <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+                  </label>
+                  <label className="color-swatch-custom" title="Custom date color">
+                    <input type="color" value={dateColor} onChange={(e) => setDateColor(e.target.value)} />
+                    <span className="color-swatch-custom-label">Date</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="frame-styles-row" style={{ marginBottom: '8px' }}>
+                <label className="date-toggle-row">
+                  <input type="checkbox" checked={showDate} onChange={(e) => setShowDate(e.target.checked)} />
+                  Show date on polaroid
+                </label>
               </div>
 
               {/* Action Buttons Row */}
