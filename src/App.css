@@ -1087,6 +1087,36 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+/* A subtle, realistic glossy sheen across the photo — no gimmicky light-leak
+   streaks, just a faint highlight like real photo paper catches light. */
+.polaroid-image-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 30%);
+  pointer-events: none;
+}
+
+/* Orientation: vertical is the classic tall polaroid card (square photo).
+   Horizontal widens the card and switches the photo to a landscape crop. */
+.polaroid-frame.orientation-horizontal {
+  width: 420px;
+}
+
+.polaroid-frame.orientation-horizontal .polaroid-image-container,
+.scrapbook-polaroid.orientation-horizontal .polaroid-image-container {
+  aspect-ratio: 4 / 3;
+}
+
+.polaroid-frame.orientation-vertical .polaroid-image-container,
+.scrapbook-polaroid.orientation-vertical .polaroid-image-container {
+  aspect-ratio: 1 / 1;
+}
+
+.scrapbook-polaroid.orientation-horizontal {
+  width: 320px;
+}
+
 .polaroid-photo {
   width: 100%;
   height: 100%;
@@ -1175,6 +1205,120 @@
 .frame-style-select-btn.locked {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Orientation toggle (vertical / horizontal polaroid) */
+.orientation-toggle-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.orientation-toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.orientation-toggle-btn.active {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: var(--accent-purple);
+  color: var(--text-primary);
+}
+
+/* Font picker grid — each button previews its own font */
+.font-styles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.font-select-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 10px 8px;
+  font-size: 15px;
+}
+
+.font-select-btn.active {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: var(--accent-purple);
+}
+
+/* Text color swatches + native color pickers */
+.color-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.color-swatch-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-swatch-btn.active {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px var(--accent-purple-glow);
+}
+
+.color-swatch-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.color-swatch-custom input[type='color'] {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  overflow: hidden;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.color-swatch-custom-label {
+  font-size: 11px;
+}
+
+/* Show-date checkbox row */
+.date-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.date-toggle-row input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-purple);
+  cursor: pointer;
 }
 
 /* ========================================================
