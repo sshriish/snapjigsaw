@@ -30,9 +30,9 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
   const [history, setHistory] = useState<PuzzlePiece[][]>([]);
   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [showGhost, setShowGhost] = useState(true);
-  const [ghostOpacity, setGhostOpacity] = useState(0.35);
-  const [showReference, setShowReference] = useState(true);
+  const [showGhost, setShowGhost] = useState(false);
+  const [ghostOpacity, setGhostOpacity] = useState(0);
+  const [showReference, setShowReference] = useState(false);
   const [referenceExpanded, setReferenceExpanded] = useState(false);
   const [isWin, setIsWin] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -57,10 +57,12 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
       setHasStarted(true);
       setIsWin(false);
       setElapsedTime(0);
-      
-      // Auto ghost fading sequence on start
-      setGhostOpacity(0.35);
-      triggerGhostFade();
+
+      // Hints are opt-in only: nothing is shown until the user asks for it.
+      setShowGhost(false);
+      setGhostOpacity(0);
+      setShowReference(false);
+      clearGhostTimeout();
     }
     void initPuzzle();
 
@@ -352,10 +354,12 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
           >
             <Undo2 size={18} />
           </button>
+          <span className="hint-controls-label">Hint:</span>
           <button
             className={`control-btn ${showGhost ? 'active' : ''}`}
             onClick={toggleGhost}
-            title="Toggle Ghost Preview"
+            title="Hint: briefly show the full photo over the board"
+            aria-label="Show hint: photo overlay"
           >
             {showGhost ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
@@ -365,7 +369,8 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
               setShowReference((prev) => !prev);
               setReferenceExpanded(false);
             }}
-            title="Toggle Reference Photo"
+            title="Hint: show a small reference photo you can enlarge"
+            aria-label="Show hint: reference photo"
           >
             <ImageIcon size={18} />
           </button>
@@ -511,7 +516,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
           {rotationMode
             ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate | Keyboard: Arrows to move, Enter to select/swap, R to rotate"
             : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap | Keyboard: Arrows to move, Enter to select/swap"}
-          {' '}Tap the reference photo in the bottom-left to enlarge it anytime.
+          {' '}Stuck? Use the Hint buttons above for a peek at the photo — totally optional.
         </span>
       </div>
 
