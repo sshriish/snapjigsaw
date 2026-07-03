@@ -1,12 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Satisfy&family=Caveat:wght@400;600;700&family=Homemade+Apple&family=Special+Elite&family=Shadows+Into+Light&family=Poppins:wght@400;600;700&family=Permanent+Marker&family=Bebas+Neue&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
 
 :root {
-  /* Soft Floral / Heirloom-Paper Theme */
-  --bg-gradient-start: #fbf4ec;
-  --bg-gradient-end: #f6ede0;
-  --panel-bg: rgba(255, 253, 249, 0.82);
-  --panel-border: rgba(168, 121, 90, 0.22);
-  --glass-glow: rgba(196, 122, 140, 0.16);
+  /* Heirloom Vanity Theme — blush, mauve & champagne-gold on warm cream paper */
+  --bg-gradient-start: #fdf5ee;
+  --bg-gradient-end: #f7e9de;
+  --panel-bg: rgba(255, 252, 248, 0.86);
+  --panel-bg-solid: #fffaf4;
+  --panel-border: rgba(180, 116, 106, 0.24);
+  --glass-glow: rgba(199, 116, 141, 0.18);
 
   --text-primary: #4a3428;
   --text-secondary: #8a7160;
@@ -15,12 +16,18 @@
   /* Names kept the same as the original theme so every var() reference
      throughout the app repaints automatically — purple -> dusty rose,
      cyan -> sage, pink -> antique gold. */
-  --accent-purple: #c47a8c;
-  --accent-purple-glow: rgba(196, 122, 140, 0.4);
-  --accent-cyan: #7a9676;
-  --accent-cyan-glow: rgba(122, 150, 118, 0.38);
-  --accent-pink: #c9a15a;
-  --accent-pink-glow: rgba(201, 161, 90, 0.4);
+  --accent-purple: #c8748e;
+  --accent-purple-light: #e3a9bc;
+  --accent-purple-glow: rgba(200, 116, 142, 0.42);
+  --accent-cyan: #839a76;
+  --accent-cyan-glow: rgba(131, 154, 118, 0.38);
+  --accent-pink: #cc9e4a;
+  --accent-pink-light: #e6c583;
+  --accent-pink-glow: rgba(204, 158, 74, 0.42);
+
+  /* New: extra jewel accent for tiny high-value flourishes (badges, stars) */
+  --accent-lilac: #a084ac;
+  --accent-lilac-glow: rgba(160, 132, 172, 0.35);
 
   --success: #7a9d7e;
   --error: #c1666b;
@@ -28,6 +35,7 @@
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-handwriting: 'Satisfy', cursive;
+  --font-script-alt: 'Caveat', cursive;
   --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* Grid Layouts */
@@ -44,13 +52,14 @@
 body {
   font-family: var(--font-sans);
   background-image:
-    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='120'%20viewBox='0%200%20120%20120'%3E%3Cg%20fill='rgb(196,122,140)'%20fill-opacity='0.07'%3E%3Ccircle%20cx='18'%20cy='14'%20r='2.4'/%3E%3Ccircle%20cx='24'%20cy='10'%20r='2.4'/%3E%3Ccircle%20cx='26'%20cy='18'%20r='2.4'/%3E%3Ccircle%20cx='20'%20cy='22'%20r='2.4'/%3E%3Ccircle%20cx='14'%20cy='18'%20r='2.4'/%3E%3C/g%3E%3Cellipse%20cx='10'%20cy='26'%20rx='4'%20ry='2'%20transform='rotate(-30%2010%2026)'%20fill='rgb(122,150,118)'%20fill-opacity='0.07'/%3E%3Cg%20fill='rgb(201,161,90)'%20fill-opacity='0.08'%3E%3Ccircle%20cx='78'%20cy='70'%20r='2'/%3E%3Ccircle%20cx='83'%20cy='67'%20r='2'/%3E%3Ccircle%20cx='85'%20cy='73'%20r='2'/%3E%3Ccircle%20cx='80'%20cy='76'%20r='2'/%3E%3Ccircle%20cx='75'%20cy='73'%20r='2'/%3E%3C/g%3E%3Cellipse%20cx='70'%20cy='80'%20rx='4'%20ry='2'%20transform='rotate(25%2070%2080)'%20fill='rgb(122,150,118)'%20fill-opacity='0.07'/%3E%3Ccircle%20cx='95'%20cy='24'%20r='1.6'%20fill='rgb(201,161,90)'%20fill-opacity='0.09'/%3E%3Ccircle%20cx='30'%20cy='92'%20r='1.6'%20fill='rgb(196,122,140)'%20fill-opacity='0.08'/%3E%3C/svg%3E"),
-    radial-gradient(circle at 15% 10%, rgba(196, 122, 140, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 85% 90%, rgba(122, 150, 118, 0.08) 0%, transparent 45%),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='120'%20viewBox='0%200%20120%20120'%3E%3Cg%20fill='rgb(200,116,142)'%20fill-opacity='0.08'%3E%3Ccircle%20cx='18'%20cy='14'%20r='2.4'/%3E%3Ccircle%20cx='24'%20cy='10'%20r='2.4'/%3E%3Ccircle%20cx='26'%20cy='18'%20r='2.4'/%3E%3Ccircle%20cx='20'%20cy='22'%20r='2.4'/%3E%3Ccircle%20cx='14'%20cy='18'%20r='2.4'/%3E%3C/g%3E%3Cellipse%20cx='10'%20cy='26'%20rx='4'%20ry='2'%20transform='rotate(-30%2010%2026)'%20fill='rgb(131,154,118)'%20fill-opacity='0.07'/%3E%3Cg%20fill='rgb(204,158,74)'%20fill-opacity='0.1'%3E%3Ccircle%20cx='78'%20cy='70'%20r='2'/%3E%3Ccircle%20cx='83'%20cy='67'%20r='2'/%3E%3Ccircle%20cx='85'%20cy='73'%20r='2'/%3E%3Ccircle%20cx='80'%20cy='76'%20r='2'/%3E%3Ccircle%20cx='75'%20cy='73'%20r='2'/%3E%3C/g%3E%3Cellipse%20cx='70'%20cy='80'%20rx='4'%20ry='2'%20transform='rotate(25%2070%2080)'%20fill='rgb(131,154,118)'%20fill-opacity='0.07'/%3E%3Ccircle%20cx='95'%20cy='24'%20r='1.6'%20fill='rgb(204,158,74)'%20fill-opacity='0.11'/%3E%3Ccircle%20cx='30'%20cy='92'%20r='1.6'%20fill='rgb(200,116,142)'%20fill-opacity='0.09'/%3E%3Cpath%20d='M60%2046%20q2%20-6%208%20-4%20q2%206%20-4%208%20q-6%20-2%20-4%20-4Z'%20fill='rgb(160,132,172)'%20fill-opacity='0.08'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 12% 8%, rgba(200, 116, 142, 0.10) 0%, transparent 42%),
+    radial-gradient(circle at 88% 92%, rgba(131, 154, 118, 0.09) 0%, transparent 42%),
+    radial-gradient(circle at 90% 12%, rgba(204, 158, 74, 0.07) 0%, transparent 38%),
     linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
-  background-size: 120px 120px, auto, auto, auto;
-  background-attachment: fixed, fixed, fixed, fixed;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 120px 120px, auto, auto, auto, auto;
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
   color: var(--text-primary);
   min-height: 100vh;
   min-height: 100svh;
@@ -139,6 +148,16 @@ body {
   background: var(--accent-purple);
 }
 
+/* Reduced motion: calm the app down for people who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Common Animations */
 @keyframes pulseGlow {
   0%, 100% {
@@ -169,14 +188,33 @@ body {
   }
 }
 
-/* Glassmorphism -> soft "pressed paper" Panel style */
+/* Glassmorphism -> soft "pressed paper" Panel style, now with a signature
+   deckled (torn-edge) top border like fine stationery, plus a warmer,
+   more layered shadow so panels feel like cards resting on the table. */
 .glass-panel {
-  background: var(--panel-bg);
+  background:
+    radial-gradient(circle at 18px 4px, transparent 4px, var(--panel-bg) 4.6px) repeat-x top / 20px 10px,
+    var(--panel-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--panel-border);
-  box-shadow: 0 8px 28px 0 rgba(122, 84, 61, 0.14);
-  border-radius: 20px;
+  border-top: none;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+    0 14px 36px -8px rgba(122, 61, 74, 0.18),
+    0 4px 14px 0 rgba(122, 84, 61, 0.10);
+  border-radius: 22px;
+  position: relative;
+}
+
+/* Thin gold hairline just inside the border — a quiet "gilded edge" touch */
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(204, 158, 74, 0.16);
+  border-radius: 16px;
+  pointer-events: none;
 }
 
 /* Interactive elements */
