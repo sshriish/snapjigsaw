@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Download, Share2, Save, ArrowLeft, RectangleHorizontal, RectangleVertical, MoveHorizontal, SplitSquareHorizontal, SplitSquareVertical } from 'lucide-react';
+import { Sparkles, Download, Share2, QrCode, Save, ArrowLeft, RectangleHorizontal, RectangleVertical, MoveHorizontal, SplitSquareHorizontal, SplitSquareVertical } from 'lucide-react';
 import { composeMergedImage } from '../utils/imageMerge';
+import { QrShareModal } from './QrShareModal';
 import {
   FRAME_STYLES,
   FONT_OPTIONS,
@@ -66,6 +67,7 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
   });
 
   const polaroidRef = useRef<HTMLDivElement>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // 1. Merge photos into one flattened square image (a no-op merge when
   //    there's only a single photo). Photos are already run through the
@@ -473,6 +475,14 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
                   <button className="btn-secondary" style={{ flex: 1 }} onClick={handleShare} title="Share to social media">
                     <Share2 size={18} /> Share
                   </button>
+                  <button
+                    className="btn-secondary"
+                    style={{ flex: 1 }}
+                    onClick={() => setShowQrModal(true)}
+                    title="Show a QR code that anyone can scan to see this photo — works offline, no account needed"
+                  >
+                    <QrCode size={18} /> QR Code
+                  </button>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
                   <button className="btn-secondary" style={{ flex: 1 }} onClick={onCancel} title="Go back and choose a different option">
@@ -486,6 +496,14 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
             </>
           )}
         </>
+      )}
+
+      {showQrModal && (
+        <QrShareModal
+          getCanvas={generatePolaroidCanvas}
+          fileName={`polaroid-${Date.now()}`}
+          onClose={() => setShowQrModal(false)}
+        />
       )}
     </div>
   );
