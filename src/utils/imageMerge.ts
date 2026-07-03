@@ -50,14 +50,36 @@ interface Rect {
   h: number;
 }
 
+export interface MergeOptions {
+  /** Fraction (0..1) of the canvas given to the FIRST photo. Only applies
+   *  when exactly 2 photos are being merged. Defaults to 0.5 (even split).
+   *  Clamped to [0.15, 0.85] so neither photo ever shrinks to nothing. */
+  splitRatio?: number;
+  /** 'side'  = left/right split, divided by a vertical seam (default)
+   *  'stack' = top/bottom split, divided by a horizontal seam */
+  orientation?: 'side' | 'stack';
+}
+
 /** Collage cell layout per photo count. Coordinates are fractions of the
  *  final square canvas (0..1) so they scale to any output size. */
-function getLayoutRects(count: number): Rect[] {
+function getLayoutRects(count: number, options: MergeOptions): Rect[] {
   if (count === 2) {
-    // Side-by-side halves
+    const ratio = Math.min(0.85, Math.max(0.15, options.splitRatio ?? 0.5));
+
+    if (options.orientation === 'stack') {
+      // Stacked halves, split by a horizontal seam — area given to each
+      // photo is user-adjustable via `ratio`.
+      return [
+        { x: 0, y: 0, w: 1, h: ratio },
+        { x: 0, y: ratio, w: 1, h: 1 - ratio }
+      ];
+    }
+
+    // Side-by-side, split by a vertical seam (default) — area given to
+    // each photo is user-adjustable via `ratio`.
     return [
-      { x: 0, y: 0, w: 0.5, h: 1 },
-      { x: 0.5, y: 0, w: 0.5, h: 1 }
+      { x: 0, y: 0, w: ratio, h: 1 },
+      { x: ratio, y: 0, w: 1 - ratio, h: 1 }
     ];
   }
   if (count === 3) {
@@ -76,10 +98,14 @@ function getLayoutRects(count: number): Rect[] {
  * Composites the given photos (newest-first order is fine, no assumptions
  * are made about ordering) into one square image.
  * - 1 photo -> returned as-is (no canvas work needed)
- * - 2 photos -> side-by-side split
+ * - 2 photos -> split by `options.splitRatio`/`options.orientation`
  * - 3 photos -> 1 large + 2 stacked collage
  */
-export async function composeMergedImage(photos: string[], size = 900): Promise<string> {
+export async function composeMergedImage(
+  photos: string[],
+  size = 900,
+  options: MergeOptions = {}
+): Promise<string> {
   if (photos.length === 0) {
     throw new Error('composeMergedImage requires at least one photo');
   }
@@ -99,7 +125,7 @@ export async function composeMergedImage(photos: string[], size = 900): Promise<
   ctx.fillRect(0, 0, size, size);
 
   const images = await Promise.all(photos.map(loadImage));
-  const rects = getLayoutRects(photos.length);
+  const rects = getLayoutRects(photos.length, options);
   const gap = Math.round(size * 0.008); // thin white "seam" between collage cells
 
   images.forEach((img, i) => {
