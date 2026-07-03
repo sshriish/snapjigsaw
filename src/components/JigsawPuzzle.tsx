@@ -401,21 +401,6 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
             />
           )}
 
-          {/* Persistent reference thumbnail — the original, uncropped photo,
-              always fully visible (unlike the fading ghost overlay) so the
-              player can check it at any point while solving. */}
-          {showReference && (
-            <button
-              type="button"
-              className={`reference-thumb ${referenceExpanded ? 'expanded' : ''}`}
-              onClick={() => setReferenceExpanded((prev) => !prev)}
-              title={referenceExpanded ? 'Shrink reference photo' : 'Expand reference photo'}
-            >
-              <span className="reference-thumb-label">Reference</span>
-              <img src={photoDataUrl} alt="Original photo reference" />
-            </button>
-          )}
-
           {/* Scrambled puzzle pieces */}
           <div
             className="puzzle-grid"
@@ -491,6 +476,22 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
         </div>
       </div>
 
+      {/* Persistent reference thumbnail — the original, uncropped photo,
+          always fully visible (unlike the fading ghost overlay) so the
+          player can check it at any point while solving. Sits outside the
+          puzzle board, pinned to the bottom-left of the screen. */}
+      {showReference && (
+        <button
+          type="button"
+          className={`reference-thumb ${referenceExpanded ? 'expanded' : ''}`}
+          onClick={() => setReferenceExpanded((prev) => !prev)}
+          title={referenceExpanded ? 'Shrink reference photo' : 'Expand reference photo'}
+        >
+          <span className="reference-thumb-label">Reference</span>
+          <img src={photoDataUrl} alt="Original photo reference" />
+        </button>
+      )}
+
       {/* Action Footer */}
       <div className="puzzle-footer">
         <button className="btn-danger" onClick={requestDiscard}>
@@ -510,7 +511,7 @@ export const JigsawPuzzle: React.FC<JigsawPuzzleProps> = ({
           {rotationMode
             ? "Desktop: Drag to swap, Click to rotate | Mobile: Tap to select/swap, Tap selected to rotate | Keyboard: Arrows to move, Enter to select/swap, R to rotate"
             : "Desktop: Drag to swap | Mobile: Tap one piece, then another to swap | Keyboard: Arrows to move, Enter to select/swap"}
-          {' '}Tap the reference thumbnail in the corner to enlarge it anytime.
+          {' '}Tap the reference photo in the bottom-left to enlarge it anytime.
         </span>
       </div>
 
