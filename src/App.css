@@ -549,6 +549,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: relative;
 }
 
 .puzzle-status-bar {
@@ -656,11 +657,11 @@
 /* Persistent reference photo — always fully visible in a corner, unlike the
    fading ghost overlay. Click/tap to expand for a closer look. */
 .reference-thumb {
-  position: fixed;
-  bottom: 16px;
-  left: 16px;
-  z-index: 50;
-  width: 140px;
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 30;
+  width: 170px;
   aspect-ratio: 1 / 1;
   padding: 0;
   border-radius: 12px;
@@ -705,6 +706,7 @@
   bottom: 50%;
   left: 50%;
   transform: translate(-50%, 50%);
+  z-index: 40;
   border-color: var(--accent-cyan);
   box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7);
 }
