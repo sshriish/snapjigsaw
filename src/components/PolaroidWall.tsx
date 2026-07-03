@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Trash2, Download, Share2, ArrowLeft } from 'lucide-react';
+import { Camera, Image as ImageIcon, Trash2, Download, Share2, QrCode, ArrowLeft } from 'lucide-react';
 import { drawFrameBackground, getFrameTextColor, getFrameDateColor, getFontFamily, ensureFontLoaded, DEFAULT_FONT_ID } from '../utils/frameStyles';
+import { QrShareModal } from './QrShareModal';
 
 interface Polaroid {
   id: string;
@@ -23,6 +24,7 @@ interface PolaroidWallProps {
 
 export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete, onBack }) => {
   const [activeLightbox, setActiveLightbox] = useState<Polaroid | null>(null);
+  const [qrTarget, setQrTarget] = useState<Polaroid | null>(null);
 
   // Generate a random rotation/tilt angle for each polaroid on the scrapbook wall
   const getTiltAngle = (id: string): number => {
@@ -236,6 +238,13 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
               <button className="btn-secondary" onClick={() => handleShare(activeLightbox)}>
                 <Share2 size={16} /> Share
               </button>
+              <button
+                className="btn-secondary"
+                onClick={() => setQrTarget(activeLightbox)}
+                title="Show a QR code that anyone can scan to see this photo — works offline, no account needed"
+              >
+                <QrCode size={16} /> QR Code
+              </button>
               <button className="btn-danger" onClick={() => handleDeleteWithConfirmation(activeLightbox.id)}>
                 <Trash2 size={16} /> Delete Memory
               </button>
@@ -245,6 +254,14 @@ export const PolaroidWall: React.FC<PolaroidWallProps> = ({ polaroids, onDelete,
             </div>
           </div>
         </div>
+      )}
+
+      {qrTarget && (
+        <QrShareModal
+          getCanvas={() => buildCanvas(qrTarget)}
+          fileName={`${qrTarget.caption.replace(/\s+/g, '-').toLowerCase()}-${qrTarget.id}`}
+          onClose={() => setQrTarget(null)}
+        />
       )}
     </div>
   );
