@@ -51,8 +51,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onBack 
     const constraints = {
       video: {
         facingMode: facingMode,
-        width: { ideal: 1024 },
-        height: { ideal: 768 },
+        width: { ideal: 1920 },
+        height: { ideal: 1440 },
         aspectRatio: { ideal: 4 / 3 }
       },
       audio: false
