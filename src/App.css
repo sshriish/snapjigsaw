@@ -33,17 +33,21 @@
 }
 
 .app-title {
+  font-family: var(--font-serif);
   font-size: 28px;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--text-primary), var(--accent-cyan));
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--accent-purple) 0%, var(--text-primary) 45%, var(--accent-pink) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .app-subtitle {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-family: var(--font-handwriting);
+  font-size: 16px;
+  color: var(--accent-purple);
+  opacity: 0.85;
+  margin-top: -2px;
 }
 
 .header-actions {
@@ -52,11 +56,11 @@
 }
 
 .btn-secondary {
-  background: rgba(122, 84, 61, 0.05);
+  background: rgba(255, 252, 248, 0.6);
   border: 1px solid var(--panel-border);
   color: var(--text-primary);
-  padding: 8px 16px;
-  border-radius: 12px;
+  padding: 8px 18px;
+  border-radius: 99px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -64,26 +68,54 @@
 }
 
 .btn-secondary:hover {
-  background: rgba(122, 84, 61, 0.1);
-  border-color: rgba(122, 84, 61, 0.2);
+  background: rgba(200, 116, 142, 0.08);
+  border-color: var(--accent-purple);
   transform: translateY(-1px);
 }
 
+/* Primary CTA: an embossed, gold-rimmed "wax seal" button with a soft
+   diagonal sheen that sweeps across on hover — the one place we spend
+   a bit of shimmer/shine so it reads as the app's single confident gesture. */
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  background: linear-gradient(135deg, var(--accent-purple) 0%, #c4607e 55%, var(--accent-pink) 100%);
   color: #fff;
-  padding: 12px 24px;
-  border-radius: 14px;
+  padding: 13px 26px;
+  border-radius: 99px;
   font-weight: 600;
-  box-shadow: 0 4px 15px var(--accent-purple-glow);
+  letter-spacing: 0.2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 4px 16px var(--accent-purple-glow);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(196, 122, 140, 0.7);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 8px 22px rgba(200, 116, 142, 0.55);
+}
+
+.btn-primary:hover::after {
+  left: 130%;
 }
 
 .btn-primary:active {
@@ -127,12 +159,27 @@
 }
 
 .landing-title {
-  font-size: 36px;
-  font-weight: 800;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, var(--text-primary) 20%, var(--accent-purple) 100%);
+  font-family: var(--font-serif);
+  font-size: 38px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--text-primary) 15%, var(--accent-purple) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Small hand-drawn flourish under the headline — a quiet signature touch
+   instead of a generic rule/divider. */
+.landing-title::after {
+  content: '';
+  display: block;
+  width: 120px;
+  height: 14px;
+  margin: 10px auto 18px;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='14'%20viewBox='0%200%20120%2014'%3E%3Cpath%20d='M2%207%20C%2030%20-2%2045%2016%2060%207%20C%2075%20-2%2090%2016%20118%207'%20stroke='%23c8748e'%20stroke-width='1.4'%20fill='none'%20stroke-linecap='round'/%3E%3Ccircle%20cx='60'%20cy='7'%20r='2.4'%20fill='%23cc9e4a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.85;
 }
 
 .landing-desc {
@@ -148,8 +195,8 @@
   gap: 8px;
   font-size: 12px;
   color: var(--accent-cyan);
-  background: rgba(122, 150, 118, 0.08);
-  border: 1px solid rgba(122, 150, 118, 0.2);
+  background: rgba(131, 154, 118, 0.09);
+  border: 1px solid rgba(131, 154, 118, 0.22);
   padding: 6px 14px;
   border-radius: 99px;
   margin-bottom: 24px;
@@ -158,10 +205,10 @@
 .settings-section {
   text-align: left;
   margin-bottom: 30px;
-  background: rgba(196, 154, 108, 0.08);
+  background: linear-gradient(160deg, rgba(230, 197, 131, 0.12), rgba(200, 116, 142, 0.06));
   padding: 20px;
-  border-radius: 16px;
-  border: 1px solid rgba(122, 84, 61, 0.1);
+  border-radius: 18px;
+  border: 1px solid rgba(180, 116, 106, 0.16);
 }
 
 .settings-label {
@@ -181,9 +228,9 @@
 }
 
 .difficulty-btn {
-  background: rgba(122, 84, 61, 0.03);
+  background: rgba(255, 252, 248, 0.55);
   border: 1px solid var(--panel-border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px;
   color: var(--text-secondary);
   display: flex;
@@ -194,11 +241,16 @@
   overflow: hidden;
 }
 
+.difficulty-btn:hover {
+  border-color: var(--accent-purple-light);
+  transform: translateY(-1px);
+}
+
 .difficulty-btn.active {
-  background: rgba(196, 122, 140, 0.1);
+  background: linear-gradient(160deg, rgba(200, 116, 142, 0.14), rgba(230, 197, 131, 0.10));
   border-color: var(--accent-purple);
   color: var(--text-primary);
-  box-shadow: 0 0 12px rgba(196, 122, 140, 0.2);
+  box-shadow: 0 0 0 1px rgba(200, 116, 142, 0.15) inset, 0 4px 12px rgba(200, 116, 142, 0.18);
 }
 
 .difficulty-btn.locked {
@@ -251,14 +303,14 @@
 .switch-btn {
   width: 48px;
   height: 26px;
-  background: rgba(122, 84, 61, 0.1);
+  background: rgba(122, 84, 61, 0.12);
   border-radius: 99px;
   position: relative;
   transition: background 0.3s;
 }
 
 .switch-btn.active {
-  background: var(--accent-cyan);
+  background: linear-gradient(120deg, var(--accent-purple), var(--accent-pink));
 }
 
 .switch-thumb {
@@ -269,6 +321,7 @@
   position: absolute;
   top: 3px;
   left: 3px;
+  box-shadow: 0 1px 3px rgba(74, 52, 40, 0.3);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1501,7 +1554,7 @@
   background: #fdfdfd;
   color: #1a1a24;
   padding: 12px 12px 28px 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 25px rgba(122, 61, 74, 0.28);
   border-radius: 3px;
   border: 1px solid rgba(0,0,0,0.05);
   display: flex;
@@ -1513,7 +1566,7 @@
 
 .scrapbook-polaroid:hover {
   transform: scale(1.05) rotate(0deg) !important;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 15px 35px rgba(122, 61, 74, 0.4);
   z-index: 5;
 }
 
