@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Download, Share2, Save, ArrowLeft, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { Sparkles, Download, Share2, Save, ArrowLeft, RectangleHorizontal, RectangleVertical, MoveHorizontal, SplitSquareHorizontal, SplitSquareVertical } from 'lucide-react';
 import { composeMergedImage } from '../utils/imageMerge';
 import {
   FRAME_STYLES,
@@ -41,11 +41,17 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
   onCancel
 }) => {
   const isMerge = photos.length > 1;
+  const isTwoPhotoMerge = photos.length === 2;
   const previewPhoto = photos[0];
 
   const [isEnhancing, setIsEnhancing] = useState(true);
   const [enhancedPhoto, setEnhancedPhoto] = useState<string | null>(null);
   const [isDeveloping, setIsDeveloping] = useState(false);
+  const [isRemerging, setIsRemerging] = useState(false);
+  // Only meaningful when isTwoPhotoMerge: fraction (0..1) of the merged
+  // image's area given to the first (newest) photo. 0.5 = even split.
+  const [mergeSplitRatio, setMergeSplitRatio] = useState(0.5);
+  const [mergeOrientation, setMergeOrientation] = useState<'side' | 'stack'>('side');
   const [caption, setCaption] = useState('');
   const [frameStyle, setFrameStyle] = useState('classic');
   const [orientation, setOrientation] = useState<PolaroidOrientation>('vertical');
@@ -71,7 +77,11 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
     async function runEnhancement() {
       setIsEnhancing(true);
       try {
-        const merged = await composeMergedImage(photos);
+        const merged = await composeMergedImage(
+          photos,
+          900,
+          isTwoPhotoMerge ? { splitRatio: 0.5, orientation: 'side' } : undefined
+        );
         if (!active) return;
         setEnhancedPhoto(merged);
         setIsEnhancing(false);
@@ -93,6 +103,37 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photos]);
+
+  // 1b. When the user drags the split-ratio slider or flips the merge
+  //     orientation for a 2-photo collage, quietly recompose the image
+  //     with the new layout — no need to replay the enhancing/developing
+  //     animation for that, just swap the merged image in place.
+  useEffect(() => {
+    if (!isTwoPhotoMerge || isEnhancing) return;
+    let active = true;
+
+    async function reMerge() {
+      setIsRemerging(true);
+      try {
+        const merged = await composeMergedImage(photos, 900, {
+          splitRatio: mergeSplitRatio,
+          orientation: mergeOrientation
+        });
+        if (!active) return;
+        setEnhancedPhoto(merged);
+      } catch (err) {
+        console.error('Re-merge failed:', err);
+      } finally {
+        if (active) setIsRemerging(false);
+      }
+    }
+    void reMerge();
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mergeSplitRatio, mergeOrientation]);
 
   // Handle chemical reveal fade duration
   useEffect(() => {
@@ -267,8 +308,9 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
               <img
                 src={enhancedPhoto || previewPhoto}
                 alt="Developing snap"
-                className={`polaroid-photo ${isDeveloping ? 'developing' : 'developed'}`}
+                className={`polaroid-photo ${isDeveloping ? 'developing' : 'developed'} ${isRemerging ? 'remerging' : ''}`}
               />
+              {isRemerging && <div className="remerge-spinner" />}
             </div>
             
             <div className="polaroid-info">
@@ -292,6 +334,42 @@ export const PolaroidReveal: React.FC<PolaroidRevealProps> = ({
 
           {!isDeveloping && (
             <>
+              {isTwoPhotoMerge && (
+                <div className="frame-styles-row">
+                  <span className="settings-label">
+                    Merge Balance — Photo 1 {Math.round(mergeSplitRatio * 100)}% / Photo 2{' '}
+                    {Math.round((1 - mergeSplitRatio) * 100)}%
+                  </span>
+                  <div className="merge-slider-row">
+                    <MoveHorizontal size={16} className="merge-slider-icon" />
+                    <input
+                      type="range"
+                      min={15}
+                      max={85}
+                      step={1}
+                      value={Math.round(mergeSplitRatio * 100)}
+                      onChange={(e) => setMergeSplitRatio(Number(e.target.value) / 100)}
+                      className="merge-slider"
+                      aria-label="Adjust how much area each photo takes up in the merge"
+                    />
+                  </div>
+                  <div className="orientation-toggle-row">
+                    <button
+                      className={`orientation-toggle-btn ${mergeOrientation === 'side' ? 'active' : ''}`}
+                      onClick={() => setMergeOrientation('side')}
+                    >
+                      <SplitSquareHorizontal size={16} /> Side by Side
+                    </button>
+                    <button
+                      className={`orientation-toggle-btn ${mergeOrientation === 'stack' ? 'active' : ''}`}
+                      onClick={() => setMergeOrientation('stack')}
+                    >
+                      <SplitSquareVertical size={16} /> Stacked
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Orientation Toggle */}
               <div className="frame-styles-row">
                 <span className="settings-label">Polaroid Shape</span>
