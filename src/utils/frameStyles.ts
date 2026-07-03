@@ -5,20 +5,87 @@
 export interface FrameStyleOption {
   id: string;
   name: string;
-  required: number; // total polaroids needed to unlock
+  required: number; // kept for backwards compatibility, always 0 now — every frame is available from the start
 }
 
+// All frame styles are unlocked from the very first polaroid — old-school users and
+// gen-Z users alike get the full picker immediately instead of grinding for it.
 export const FRAME_STYLES: FrameStyleOption[] = [
   { id: 'classic', name: 'Classic', required: 0 },
-  { id: 'kraft', name: 'Kraft Paper', required: 1 },
-  { id: 'neon', name: 'Synthwave', required: 2 },
-  { id: 'mint', name: 'Mint Fresh', required: 3 },
-  { id: 'vintage-dark', name: 'Noir Dark', required: 4 },
-  { id: 'gold', name: 'Gilded', required: 5 },
-  { id: 'rose', name: 'Rose Gold', required: 6 },
-  { id: 'blueprint', name: 'Blueprint', required: 7 },
-  { id: 'cyberpunk', name: 'Cyberpunk', required: 8 },
-  { id: 'holo', name: 'Holographic', required: 10 }
+  { id: 'kraft', name: 'Kraft Paper', required: 0 },
+  { id: 'neon', name: 'Synthwave', required: 0 },
+  { id: 'mint', name: 'Mint Fresh', required: 0 },
+  { id: 'vintage-dark', name: 'Noir Dark', required: 0 },
+  { id: 'gold', name: 'Gilded', required: 0 },
+  { id: 'rose', name: 'Rose Gold', required: 0 },
+  { id: 'blueprint', name: 'Blueprint', required: 0 },
+  { id: 'cyberpunk', name: 'Cyberpunk', required: 0 },
+  { id: 'holo', name: 'Holographic', required: 0 }
+];
+
+// ---------------------------------------------------------------------------
+// Orientation
+// ---------------------------------------------------------------------------
+export type PolaroidOrientation = 'vertical' | 'horizontal';
+
+// ---------------------------------------------------------------------------
+// Caption / date font catalogue — mix of "old school" handwritten/typewriter
+// looks and bolder "gen-Z" display fonts. Font files are pulled in via the
+// Google Fonts @import already living in src/index.css.
+// ---------------------------------------------------------------------------
+export interface FontOption {
+  id: string;
+  name: string;
+  family: string;
+  vibe: 'classic' | 'modern';
+}
+
+export const FONT_OPTIONS: FontOption[] = [
+  { id: 'satisfy', name: 'Satisfy', family: "'Satisfy', cursive", vibe: 'classic' },
+  { id: 'caveat', name: 'Caveat', family: "'Caveat', cursive", vibe: 'classic' },
+  { id: 'homemade-apple', name: 'Homemade Apple', family: "'Homemade Apple', cursive", vibe: 'classic' },
+  { id: 'special-elite', name: 'Typewriter', family: "'Special Elite', monospace", vibe: 'classic' },
+  { id: 'shadows-into-light', name: 'Shadows Light', family: "'Shadows Into Light', cursive", vibe: 'classic' },
+  { id: 'poppins', name: 'Poppins', family: "'Poppins', sans-serif", vibe: 'modern' },
+  { id: 'permanent-marker', name: 'Marker', family: "'Permanent Marker', cursive", vibe: 'modern' },
+  { id: 'bebas-neue', name: 'Bebas Neue', family: "'Bebas Neue', sans-serif", vibe: 'modern' },
+  { id: 'pacifico', name: 'Pacifico', family: "'Pacifico', cursive", vibe: 'modern' }
+];
+
+export const DEFAULT_FONT_ID = 'satisfy';
+
+export function getFontOption(fontId: string): FontOption {
+  return FONT_OPTIONS.find((f) => f.id === fontId) || FONT_OPTIONS[0];
+}
+
+export function getFontFamily(fontId: string): string {
+  return getFontOption(fontId).family;
+}
+
+/** Makes sure a webfont is actually loaded before we draw text with it onto
+ *  a <canvas> — otherwise the canvas silently falls back to a system font. */
+export async function ensureFontLoaded(fontId: string, sizePx = 40): Promise<void> {
+  const family = getFontFamily(fontId);
+  try {
+    await document.fonts.load(`${sizePx}px ${family}`);
+  } catch {
+    // Best-effort only — canvas will fall back gracefully if this fails.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Text color presets — a handful of curated swatches, but the UI also exposes
+// a native color picker so users aren't limited to these.
+// ---------------------------------------------------------------------------
+export const TEXT_COLOR_PRESETS: string[] = [
+  '#1a1a24', // ink
+  '#ffffff', // white
+  '#ff2d78', // hot pink
+  '#39ff14', // acid green
+  '#facc15', // gold/yellow
+  '#63b3ed', // sky blue
+  '#a855f7', // purple
+  '#fb7185' // rose
 ];
 
 /** Paints the polaroid card background + border for a given frame style. */
