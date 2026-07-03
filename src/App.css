@@ -585,9 +585,17 @@
 
 .status-controls {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
+.hint-controls-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-left: 2px;
+  letter-spacing: 0.02em;
+}
 .control-btn {
   background: rgba(122, 84, 61, 0.05);
   border: 1px solid var(--panel-border);
@@ -877,7 +885,52 @@
   flex: 1;
   justify-content: center;
 }
+/* QR Share Modal */
+.qr-modal-card {
+  position: relative;
+  max-width: 360px;
+}
 
+.qr-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.qr-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 8px 0;
+}
+
+.qr-spin {
+  animation: qr-spin-anim 1s linear infinite;
+}
+
+@keyframes qr-spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.qr-code-frame {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+  max-width: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-code-frame svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
 .text-input {
   flex: 1;
   background: rgba(122, 84, 61, 0.05);
