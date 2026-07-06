@@ -174,3 +174,5 @@ type-checked production build on every push and pull request.
 Linting is handled by [oxlint](https://oxc.rs/) with type-aware rules enabled
 (see `.oxlintrc.json`), catching issues like unhandled promises, `any` usage,
 and incorrect React hook dependencies at lint time rather than at runtime.
+
+## 👨‍💻 Developer Built by **Shrish Sharan** — 2026
